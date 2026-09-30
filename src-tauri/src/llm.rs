@@ -60,6 +60,17 @@ async fn stream_openai_compatible(
 
 /// 解析 OpenAI 兼容 SSE：`data: {json}` / `data: [DONE]`
 async fn sse_loop_openai(app: &AppHandle, resp: reqwest::Response) -> Result<String, String> {
+    consume_sse_openai(resp, |delta| {
+        let _ = app.emit("llm-token", delta);
+    })
+    .await
+}
+
+/// OpenAI 兼容 SSE 消费（纯逻辑，可测）：逐块拼文本，[DONE] 提前结束
+async fn consume_sse_openai(
+    resp: reqwest::Response,
+    mut on_token: impl FnMut(&str),
+) -> Result<String, String> {
     let mut buf = String::new();
     let mut full = String::new();
     let mut stream = resp.bytes_stream();
@@ -79,7 +90,7 @@ async fn sse_loop_openai(app: &AppHandle, resp: reqwest::Response) -> Result<Str
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
                 if let Some(delta) = v["choices"][0]["delta"]["content"].as_str() {
                     full.push_str(delta);
-                    let _ = app.emit("llm-token", delta);
+                    on_token(delta);
                 }
             }
         }
@@ -127,6 +138,17 @@ async fn stream_claude(
 
 /// 解析 Claude SSE：content_block_delta 事件里的 delta.text
 async fn sse_loop_claude(app: &AppHandle, resp: reqwest::Response) -> Result<String, String> {
+    consume_sse_claude(resp, |delta| {
+        let _ = app.emit("llm-token", delta);
+    })
+    .await
+}
+
+/// Claude SSE 消费（纯逻辑，可测）：content_block_delta 事件取 delta.text
+async fn consume_sse_claude(
+    resp: reqwest::Response,
+    mut on_token: impl FnMut(&str),
+) -> Result<String, String> {
     let mut buf = String::new();
     let mut full = String::new();
     let mut stream = resp.bytes_stream();
@@ -147,11 +169,93 @@ async fn sse_loop_claude(app: &AppHandle, resp: reqwest::Response) -> Result<Str
                 if v["type"].as_str() == Some("content_block_delta") {
                     if let Some(text) = v["delta"]["text"].as_str() {
                         full.push_str(text);
-                        let _ = app.emit("llm-token", text);
+                        on_token(text);
                     }
                 }
             }
         }
     }
     Ok(full)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    /// 起一个本地 SSE mock 服务器，返回 base url（服务一个连接后退出）
+    fn spawn_sse_server(body: &'static str) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            if let Ok(mut stream) = listener.accept().map(|(s, _)| s) {
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf);
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = stream.write_all(resp.as_bytes());
+            }
+        });
+        format!("http://{addr}")
+    }
+
+    #[tokio::test]
+    async fn consume_openai_sse_from_mock_server() {
+        let body = "data: {\"choices\":[{\"delta\":{\"content\":\"你\"}}]}\n\n\
+                    data: {\"choices\":[{\"delta\":{\"content\":\"好\"}}]}\n\n\
+                    data: {\"choices\":[{\"delta\":{\"content\":\"！\"}}]}\n\n\
+                    data: [DONE]\n\n";
+        let url = spawn_sse_server(body);
+        let client = Client::new();
+        let resp = client.get(&url).send().await.unwrap();
+        let mut tokens: Vec<String> = Vec::new();
+        let full = consume_sse_openai(resp, |t| tokens.push(t.to_string()))
+            .await
+            .unwrap();
+        assert_eq!(full, "你好！");
+        assert_eq!(tokens, vec!["你", "好", "！"]);
+    }
+
+    #[tokio::test]
+    async fn consume_claude_sse_from_mock_server() {
+        let body = "event: content_block_delta\n\
+                    data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"哈\"}}\n\n\
+                    event: content_block_delta\n\
+                    data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"喽\"}}\n\n\
+                    event: message_stop\n\
+                    data: {\"type\":\"message_stop\"}\n\n";
+        let url = spawn_sse_server(body);
+        let client = Client::new();
+        let resp = client.get(&url).send().await.unwrap();
+        let mut tokens: Vec<String> = Vec::new();
+        let full = consume_sse_claude(resp, |t| tokens.push(t.to_string()))
+            .await
+            .unwrap();
+        assert_eq!(full, "哈喽");
+        assert_eq!(tokens, vec!["哈", "喽"]);
+    }
+
+    #[tokio::test]
+    async fn consume_openai_http_error() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            if let Ok(mut stream) = listener.accept().map(|(s, _)| s) {
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf);
+                let resp = "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}";
+                let _ = stream.write_all(resp.as_bytes());
+            }
+        });
+        let client = Client::new();
+        // 直接消费 500 响应：SSE 解析应正常结束（空文本），错误处理在调用方 status 检查
+        let resp = client.get(format!("http://{addr}")).send().await.unwrap();
+        assert_eq!(resp.status().as_u16(), 500);
+        let full = consume_sse_openai(resp, |_| {}).await.unwrap();
+        assert!(full.is_empty());
+    }
 }

@@ -263,4 +263,21 @@ mod tests {
         let bad = b"\x00\x05Path: xxx\r\n\r\nabc".to_vec();
         assert!(parse_audio_chunk(&bad).is_none());
     }
+
+    /// 真实联网集成测试：完整协议走一遍微软 Edge TTS 服务
+    /// 断言返回有效 mp3（ID3 头或 MPEG 帧同步字节），体积 > 1KB
+    #[tokio::test]
+    async fn tts_live_synthesize() {
+        let dir = std::env::temp_dir().join(format!("mindpal-tts-live-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let out = dir.join("live.mp3");
+        synthesize("你好，这是一次语音合成测试。", "zh-CN-XiaoxiaoNeural", &out)
+            .await
+            .unwrap();
+        let data = std::fs::read(&out).unwrap();
+        assert!(data.len() > 1024, "音频太小: {} 字节", data.len());
+        let is_mp3 = data.starts_with(b"ID3") || (data[0] == 0xFF && (data[1] & 0xE0) == 0xE0);
+        assert!(is_mp3, "不是有效 mp3: 前 4 字节 {:?}", &data[..4.min(data.len())]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }
