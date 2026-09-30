@@ -1,6 +1,7 @@
 mod config;
 mod db;
 mod llm;
+mod memory;
 mod types;
 
 use std::sync::Mutex;
@@ -74,6 +75,26 @@ fn save_message(
     db::save_message(&conn, conversation_id, &role, &content)
 }
 
+// ---------- 记忆 ----------
+
+#[tauri::command]
+fn list_memories(state: State<'_, AppState>) -> Result<Vec<memory::MemoryItem>, String> {
+    let conn = state.db.lock().unwrap();
+    memory::list_memories(&conn)
+}
+
+#[tauri::command]
+fn delete_memory(state: State<'_, AppState>, id: i64) -> Result<(), String> {
+    let conn = state.db.lock().unwrap();
+    memory::delete_memory(&conn, id)
+}
+
+#[tauri::command]
+fn clear_memories(state: State<'_, AppState>) -> Result<(), String> {
+    let conn = state.db.lock().unwrap();
+    memory::clear_memories(&conn)
+}
+
 // ---------- LLM 聊天 ----------
 
 #[tauri::command]
@@ -82,13 +103,34 @@ async fn chat_stream(
     state: State<'_, AppState>,
     system_prompt: String,
     messages: Vec<types::ChatMessage>,
+    memory_enabled: bool,
 ) -> Result<String, String> {
     let cfg = state.config.lock().unwrap().clone();
     if cfg.api_key.trim().is_empty() {
         return Err("未配置 API Key，请先在设置中填写".to_string());
     }
+
+    // 记忆：归档本条用户消息 + 提取画像事实 + 检索注入上下文
+    let mut sys = system_prompt.clone();
+    if memory_enabled {
+        let conn = state.db.lock().unwrap();
+        if let Some(last_user) = messages.iter().rev().find(|m| m.role == "user") {
+            let _ = memory::add_memory(&conn, &last_user.content, "chat");
+            for fact in memory::extract_facts(&last_user.content) {
+                if !memory::fact_exists(&conn, &fact).unwrap_or(false) {
+                    let _ = memory::add_memory(&conn, &fact, "fact");
+                }
+            }
+            if let Ok(ctx) = memory::build_memory_context(&conn, &last_user.content, 6) {
+                if !ctx.is_empty() {
+                    sys = format!("{}\n\n{}", system_prompt, ctx);
+                }
+            }
+        }
+    }
+
     let client = reqwest::Client::new();
-    llm::stream_chat(&app, &client, &cfg, &system_prompt, &messages).await
+    llm::stream_chat(&app, &client, &cfg, &sys, &messages).await
 }
 
 // ---------- 入口 ----------
@@ -118,6 +160,9 @@ pub fn run() {
             delete_conversation,
             rename_conversation,
             save_message,
+            list_memories,
+            delete_memory,
+            clear_memories,
             chat_stream
         ])
         .run(tauri::generate_context!())

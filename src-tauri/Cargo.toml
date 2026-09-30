@@ -26,6 +26,8 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "str
 futures-util = "0.3"
 # 本地 SQLite：bundled 编译内置 sqlite3，无需系统库
 rusqlite = { version = "0.32", features = ["bundled"] }
+# 用户画像规则提取（纯 Rust，无系统依赖）
+regex = "1"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

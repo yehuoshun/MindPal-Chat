@@ -27,3 +27,10 @@ export interface ConversationSummary {
   title: string;
   updated_at: number;
 }
+
+export interface MemoryItem {
+  id: number;
+  content: string;
+  kind: "chat" | "fact";
+  created_at: number;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppConfig, ChatMessage, ConversationSummary, Persona } from "./types";
+import type { AppConfig, ChatMessage, ConversationSummary, MemoryItem, Persona } from "./types";
 import * as api from "./lib/api";
 import "./App.css";
 
@@ -33,9 +33,17 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [draft, setDraft] = useState<AppConfig | null>(null);
+  const [memories, setMemories] = useState<MemoryItem[]>([]);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // 打开设置时加载记忆列表
+  useEffect(() => {
+    if (showSettings) {
+      api.listMemories().then(setMemories).catch((e) => setError(String(e)));
+    }
+  }, [showSettings]);
 
   const refreshConversations = () => {
     api.listConversations().then(setConversations).catch((e) => setError(String(e)));
@@ -115,8 +123,11 @@ function App() {
       await api.saveMessage(convId, "user", text);
       const ctx = [...messages, userMsg];
       setMessages(ctx);
-      const full = await api.chatStream(persona.system_prompt, ctx, (t) =>
-        setStreamText((prev) => prev + t),
+      const full = await api.chatStream(
+        persona.system_prompt,
+        ctx,
+        (t) => setStreamText((prev) => prev + t),
+        persona.memory_enabled ?? true,
       );
       await api.saveMessage(convId, "assistant", full);
       setMessages([...ctx, { role: "assistant", content: full }]);
@@ -126,6 +137,25 @@ function App() {
     } finally {
       setStreaming(false);
       setStreamText("");
+    }
+  };
+
+  const removeMemory = async (id: number) => {
+    try {
+      await api.deleteMemory(id);
+      setMemories((prev) => prev.filter((m) => m.id !== id));
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
+  const clearAllMemories = async () => {
+    if (!window.confirm("确定清空全部记忆？此操作不可恢复。")) return;
+    try {
+      await api.clearMemories();
+      setMemories([]);
+    } catch (e) {
+      setError(String(e));
     }
   };
 
@@ -303,6 +333,32 @@ function App() {
                 onChange={(e) => setDraft({ ...draft, temperature: Number(e.target.value) })}
               />
             </label>
+            <div className="memory-section">
+              <h3>记忆（全本地存储）</h3>
+              <div className="mem-list">
+                {memories.map((m) => (
+                  <div className="mem-item" key={m.id}>
+                    <span className={`mem-kind ${m.kind}`}>{m.kind === "fact" ? "画像" : "对话"}</span>
+                    <span className="mem-text">{m.content}</span>
+                    <button
+                      className="mem-del"
+                      title="删除这条记忆"
+                      onClick={() => removeMemory(m.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {memories.length === 0 && (
+                  <p className="hint">还没有记忆。聊天后你说过的话会被自动记住，用于后续对话。</p>
+                )}
+              </div>
+              <div className="modal-actions">
+                <button className="ghost danger" onClick={clearAllMemories}>
+                  清空全部记忆
+                </button>
+              </div>
+            </div>
             <p className="hint">配置只保存在本机（app data 目录），不会上传。</p>
             <div className="modal-actions">
               <button className="ghost" onClick={() => setShowSettings(false)}>

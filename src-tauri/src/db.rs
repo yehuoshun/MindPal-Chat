@@ -29,6 +29,7 @@ pub fn init_schema(conn: &Connection) -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, id);",
     )
     .map_err(|e| format!("初始化表结构失败: {e}"))?;
+    crate::memory::init_schema(conn)?;
     Ok(())
 }
 
