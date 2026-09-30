@@ -15,6 +15,10 @@
 | 记忆 | **SQLite + LanceDB / vec0 全本地** | 隐私卖点，用户数据不出设备 |
 | 语音 TTS | **Edge TTS** | 免费、效果好、延迟低 |
 | 语音 STT | **Whisper.cpp** | 本地推理，私密，免费 |
+
+> 一期落地：TTS 已实现（Rust 直接实现 Edge TTS WebSocket 协议，见 `src-tauri/src/tts.rs`，算法与常量对齐 edge-tts Python 库，2026-10 实测可用）；
+> 音频按「音色+文本」哈希缓存到 app_data/tts/，重复文本不重复合成；设置里可开关朗读 + 换音色；STT（Whisper.cpp）二期。
+> ⚠️ 隐私：朗读文本会发送给微软 Edge TTS 服务，对话内容本身仍只存本地。
 | 人格系统 | **自定义 JSON / 兼容酒馆角色卡** | 自己定义格式，兼容社区资源 |
 
 ## 核心架构

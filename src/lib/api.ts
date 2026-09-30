@@ -29,6 +29,10 @@ export const deleteMemory = (id: number) => invoke<void>("delete_memory", { id }
 
 export const clearMemories = () => invoke<void>("clear_memories");
 
+// ---------- 语音 ----------
+export const ttsSpeak = (text: string, voice: string) =>
+  invoke<string>("tts_speak", { text, voice });
+
 // ---------- 聊天（流式） ----------
 /**
  * 发起流式聊天：订阅 llm-token 事件逐段回调，Promise resolve 时返回完整文本

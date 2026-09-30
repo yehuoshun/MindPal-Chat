@@ -28,6 +28,11 @@ futures-util = "0.3"
 rusqlite = { version = "0.32", features = ["bundled"] }
 # 用户画像规则提取（纯 Rust，无系统依赖）
 regex = "1"
+# Edge TTS WebSocket 协议
+http = "1"
+tokio-tungstenite = "0.24"
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

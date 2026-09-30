@@ -2,9 +2,11 @@ mod config;
 mod db;
 mod llm;
 mod memory;
+mod tts;
 mod types;
 
 use std::sync::Mutex;
+use sha2::Digest;
 use tauri::{Manager, State};
 
 /// 全局状态：SQLite 连接 + 应用配置
@@ -95,6 +97,23 @@ fn clear_memories(state: State<'_, AppState>) -> Result<(), String> {
     memory::clear_memories(&conn)
 }
 
+// ---------- 语音 ----------
+
+#[tauri::command]
+async fn tts_speak(app: tauri::AppHandle, text: String, voice: String) -> Result<String, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("tts");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("创建语音目录失败: {e}"))?;
+    // 同文本+音色复用缓存，不重复合成
+    let mut h = sha2::Sha256::new();
+    h.update(format!("{voice}|{text}").as_bytes());
+    let name: String = h.finalize().iter().take(16).map(|b| format!("{b:02x}")).collect();
+    let path = dir.join(format!("{name}.mp3"));
+    if !path.exists() {
+        tts::synthesize(&text, &voice, &path).await?;
+    }
+    Ok(path.to_string_lossy().to_string())
+}
+
 // ---------- LLM 聊天 ----------
 
 #[tauri::command]
@@ -163,6 +182,7 @@ pub fn run() {
             list_memories,
             delete_memory,
             clear_memories,
+            tts_speak,
             chat_stream
         ])
         .run(tauri::generate_context!())

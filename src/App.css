@@ -430,6 +430,22 @@ body {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* ---------- 语音区 ---------- */
+.voice-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.voice-section h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.voice-section label.row input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--accent);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

@@ -16,6 +16,8 @@ pub struct AppConfig {
     pub model: String,
     pub base_url: String,
     pub temperature: f64,
+    pub voice_enabled: bool, // 朗读助手回复
+    pub voice: String,       // Edge TTS 音色
 }
 
 impl Default for AppConfig {
@@ -26,6 +28,8 @@ impl Default for AppConfig {
             model: DEEPSEEK_MODEL.to_string(),
             base_url: DEEPSEEK_BASE.to_string(),
             temperature: 0.8,
+            voice_enabled: true,
+            voice: "zh-CN-XiaoxiaoNeural".to_string(),
         }
     }
 }
@@ -56,6 +60,8 @@ mod tests {
         assert_eq!(c.base_url, DEEPSEEK_BASE);
         assert_eq!(c.temperature, 0.8);
         assert!(c.api_key.is_empty());
+        assert!(c.voice_enabled);
+        assert_eq!(c.voice, "zh-CN-XiaoxiaoNeural");
     }
 
     #[test]

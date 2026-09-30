@@ -20,6 +20,8 @@ export interface AppConfig {
   model: string;
   base_url: string;
   temperature: number;
+  voice_enabled: boolean;
+  voice: string;
 }
 
 export interface ConversationSummary {

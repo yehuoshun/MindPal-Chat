@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import type { AppConfig, ChatMessage, ConversationSummary, MemoryItem, Persona } from "./types";
 import * as api from "./lib/api";
 import "./App.css";
@@ -7,6 +8,32 @@ const PROVIDER_DEFAULTS: Record<string, { model: string; base_url: string }> = {
   deepseek: { model: "deepseek-chat", base_url: "https://api.deepseek.com/v1" },
   claude: { model: "claude-sonnet-4-20250514", base_url: "https://api.anthropic.com/v1" },
 };
+
+/** Edge TTS 中文音色 */
+const VOICES: { id: string; name: string }[] = [
+  { id: "zh-CN-XiaoxiaoNeural", name: "晓晓 · 女（温暖）" },
+  { id: "zh-CN-XiaoyiNeural", name: "晓伊 · 女（活泼）" },
+  { id: "zh-CN-YunxiNeural", name: "云希 · 男（阳光）" },
+  { id: "zh-CN-YunjianNeural", name: "云健 · 男（沉稳）" },
+  { id: "zh-CN-YunyangNeural", name: "云扬 · 男（新闻）" },
+  { id: "zh-CN-YunxiaNeural", name: "云夏 · 男（少年）" },
+];
+
+let currentAudio: HTMLAudioElement | null = null;
+
+/** 合成并播放（新播放会打断旧的） */
+async function speak(text: string, voice: string, enabled: boolean) {
+  if (!enabled || !text.trim()) return;
+  try {
+    const path = await api.ttsSpeak(text, voice);
+    const audio = new Audio(convertFileSrc(path));
+    currentAudio?.pause();
+    currentAudio = audio;
+    audio.play().catch(() => {});
+  } catch {
+    // 语音失败不影响聊天
+  }
+}
 
 function fmtTime(ts: number): string {
   return new Date(ts * 1000).toLocaleString("zh-CN", {
@@ -131,6 +158,7 @@ function App() {
       );
       await api.saveMessage(convId, "assistant", full);
       setMessages([...ctx, { role: "assistant", content: full }]);
+      if (config) speak(full, config.voice || persona.voice || "zh-CN-XiaoxiaoNeural", config.voice_enabled);
       refreshConversations();
     } catch (e) {
       setError(String(e));
@@ -333,6 +361,40 @@ function App() {
                 onChange={(e) => setDraft({ ...draft, temperature: Number(e.target.value) })}
               />
             </label>
+            <div className="voice-section">
+              <h3>语音</h3>
+              <label className="row">
+                <span>朗读回复</span>
+                <input
+                  type="checkbox"
+                  checked={draft.voice_enabled}
+                  onChange={(e) => setDraft({ ...draft, voice_enabled: e.target.checked })}
+                />
+              </label>
+              <label>
+                音色
+                <select
+                  value={draft.voice}
+                  onChange={(e) => setDraft({ ...draft, voice: e.target.value })}
+                >
+                  {VOICES.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="modal-actions">
+                <button
+                  className="ghost"
+                  type="button"
+                  onClick={() => speak("你好，我是你的心灵伙伴，很高兴认识你。", draft.voice, true)}
+                >
+                  试听音色
+                </button>
+              </div>
+              <p className="hint">语音由微软 Edge TTS 在线合成，朗读文本会发送给微软服务，对话内容本身仍只存本地。</p>
+            </div>
             <div className="memory-section">
               <h3>记忆（全本地存储）</h3>
               <div className="mem-list">
