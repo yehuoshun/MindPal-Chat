@@ -37,6 +37,8 @@ http = "1"
 tokio-tungstenite = { version = "0.24", features = ["connect", "handshake", "rustls-tls-webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
 sha2 = "0.10"
+# WS 握手 Sec-WebSocket-Key 编码
+base64 = "0.22"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

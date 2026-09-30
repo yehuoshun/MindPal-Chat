@@ -151,6 +151,15 @@ pub async fn synthesize(text: &str, voice: &str, out_path: &Path) -> Result<(), 
     );
     let req = http::Request::builder()
         .uri(&url)
+        // tungstenite 走 http::Request 路径时要求调用者自带全部握手 header
+        .header("Host", "speech.platform.bing.com")
+        .header("Connection", "Upgrade")
+        .header("Upgrade", "websocket")
+        .header("Sec-WebSocket-Version", "13")
+        .header(
+            "Sec-WebSocket-Key",
+            base64::engine::general_purpose::STANDARD.encode(uuid::Uuid::new_v4().as_bytes()),
+        )
         .header("Origin", "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold")
         .header("User-Agent", UA)
         .header("Pragma", "no-cache")
