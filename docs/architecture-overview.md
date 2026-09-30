@@ -86,7 +86,7 @@ Tauri 2.0 App
 | Windows | ✅ | .exe / MSI 安装包 |
 | macOS | ✅ | .dmg / .app |
 | Linux | ✅ | .deb / AppImage |
-| Android | ✅ | .apk / .aab |
+| Android | ✅ | .apk / .aab（工程已生成：`src-tauri/gen/android`，CI 自动维护；构建需本机 Android SDK） |
 | iOS | ✅ | .ipa (需 Mac 签名) |
 | Web | ✅ (额外) | 加轻量 API Server，浏览器直接跑 |
 

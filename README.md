@@ -20,9 +20,11 @@
 - ✅ 本地 SQLite 存储：会话 + 消息（自动用首条消息当标题）
 - ✅ 人格系统：`src/personas/*.json`，随包内置（北极熊 / 小鹿），前端可切换
 - ✅ 设置面板：provider / API Key / 模型 / Base URL / 温度，存本地 `config.json`
-- ⬜ 语音 TTS/STT（Edge TTS / Whisper.cpp）
-- ⬜ 长期记忆（向量检索）
-- ⬜ 人格卡片 PNG 导入（酒馆角色卡兼容）
+- ✅ 长期记忆：对话归档 + 用户画像提取 + 检索注入，设置可查看/删除
+- ✅ Edge TTS 语音：默认朗读，6 个中文音色，CI 真实联网验证协议
+- ✅ Android 工程：`src-tauri/gen/android`（CI 的 android job 自动生成维护，包名 com.mindpal.chat）
+- ⬜ Android 实际构建（需本机 Android SDK + `npm run tauri android build`）
+- ⬜ 语音 STT（Whisper.cpp）
 - ⬜ 应用图标换 MindPal 品牌（当前是 Tauri 默认图标）
 
 详细架构见 [`docs/architecture-overview.md`](docs/architecture-overview.md)，测试规划见 [`docs/testing-plan.md`](docs/testing-plan.md)。
