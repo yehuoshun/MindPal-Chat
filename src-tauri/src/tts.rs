@@ -223,8 +223,10 @@ mod tests {
     fn gmt_string_format() {
         let s = gmt_date_string();
         assert!(s.ends_with("GMT+0000 (Coordinated Universal Time)"));
-        assert!(s.starts_with("Thu") || s.starts_with("Fri") || s.starts_with("Sat"));
-        assert!(s.contains(" 2026 "));
+        // 星期几取决于 UTC 时刻，不硬编码；只校验是合法星期缩写 + 月份缩写
+        assert!(WEEKDAYS.iter().any(|w| s.starts_with(w)));
+        assert!(MONTHS.iter().any(|m| s.contains(m)));
+        assert!(s.contains("GMT+0000 (Coordinated Universal Time)"));
     }
 
     #[test]

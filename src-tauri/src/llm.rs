@@ -1,4 +1,4 @@
-use crate::config::{AppConfig, CLAUDE_BASE, CLAUDE_MODEL, DEEPSEEK_BASE, DEEPSEEK_MODEL};
+use crate::config::AppConfig;
 use crate::types::ChatMessage;
 use futures_util::StreamExt;
 use reqwest::Client;
@@ -157,27 +157,3 @@ async fn sse_loop_claude(app: &AppHandle, resp: reqwest::Response) -> Result<Str
 }
 
 /// 按 provider 给默认端点/模型（前端切换 provider 时自动填充用）
-pub fn defaults_for(provider: &str) -> (String, String) {
-    match provider {
-        "claude" => (CLAUDE_BASE.to_string(), CLAUDE_MODEL.to_string()),
-        _ => (DEEPSEEK_BASE.to_string(), DEEPSEEK_MODEL.to_string()),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn provider_defaults() {
-        let (base, model) = defaults_for("deepseek");
-        assert_eq!(base, DEEPSEEK_BASE);
-        assert_eq!(model, DEEPSEEK_MODEL);
-        let (base, model) = defaults_for("claude");
-        assert_eq!(base, CLAUDE_BASE);
-        assert_eq!(model, CLAUDE_MODEL);
-        // 未知 provider 回退 DeepSeek
-        let (base, _) = defaults_for("unknown");
-        assert_eq!(base, DEEPSEEK_BASE);
-    }
-}
