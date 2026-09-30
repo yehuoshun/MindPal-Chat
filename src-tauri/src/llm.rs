@@ -155,5 +155,3 @@ async fn sse_loop_claude(app: &AppHandle, resp: reqwest::Response) -> Result<Str
     }
     Ok(full)
 }
-
-/// 按 provider 给默认端点/模型（前端切换 provider 时自动填充用）
