@@ -155,7 +155,6 @@ pub async fn synthesize(text: &str, voice: &str, out_path: &Path) -> Result<(), 
         .header("User-Agent", UA)
         .header("Pragma", "no-cache")
         .header("Cache-Control", "no-cache")
-        .header("Sec-WebSocket-Version", "13")
         .header("Cookie", format!("muid={};", uuid_hex().to_uppercase()))
         .body(())
         .map_err(|e| format!("构建请求失败: {e}"))?;
