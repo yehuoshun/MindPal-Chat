@@ -1,3 +1,4 @@
+use base64::Engine;
 use futures_util::{SinkExt, StreamExt};
 use sha2::{Digest, Sha256};
 use std::path::Path;
