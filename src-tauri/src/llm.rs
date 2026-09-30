@@ -163,3 +163,21 @@ pub fn defaults_for(provider: &str) -> (String, String) {
         _ => (DEEPSEEK_BASE.to_string(), DEEPSEEK_MODEL.to_string()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn provider_defaults() {
+        let (base, model) = defaults_for("deepseek");
+        assert_eq!(base, DEEPSEEK_BASE);
+        assert_eq!(model, DEEPSEEK_MODEL);
+        let (base, model) = defaults_for("claude");
+        assert_eq!(base, CLAUDE_BASE);
+        assert_eq!(model, CLAUDE_MODEL);
+        // 未知 provider 回退 DeepSeek
+        let (base, _) = defaults_for("unknown");
+        assert_eq!(base, DEEPSEEK_BASE);
+    }
+}

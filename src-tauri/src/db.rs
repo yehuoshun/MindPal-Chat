@@ -5,8 +5,15 @@ use std::path::Path;
 /// 初始化数据库（表 + 索引），幂等
 pub fn init(db_path: &Path) -> Result<Connection, String> {
     let conn = Connection::open(db_path).map_err(|e| format!("打开数据库失败: {e}"))?;
+    init_schema(&conn)?;
+    Ok(conn)
+}
+
+/// 建表（幂等），独立出来便于内存库单测
+pub fn init_schema(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS conversations (
+        "PRAGMA foreign_keys = ON;
+        CREATE TABLE IF NOT EXISTS conversations (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             title      TEXT NOT NULL DEFAULT '新对话',
             created_at INTEGER NOT NULL,
@@ -22,7 +29,7 @@ pub fn init(db_path: &Path) -> Result<Connection, String> {
         CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, id);",
     )
     .map_err(|e| format!("初始化表结构失败: {e}"))?;
-    Ok(conn)
+    Ok(())
 }
 
 pub fn new_conversation(conn: &Connection, title: &str) -> Result<i64, String> {
@@ -133,4 +140,88 @@ fn chrono_now() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_conn() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        init_schema(&conn).unwrap();
+        conn
+    }
+
+    #[test]
+    fn new_conversation_increments_id() {
+        let conn = test_conn();
+        let a = new_conversation(&conn, "新对话").unwrap();
+        let b = new_conversation(&conn, "新对话").unwrap();
+        assert!(b > a);
+    }
+
+    #[test]
+    fn save_and_load_messages_roundtrip() {
+        let conn = test_conn();
+        let id = new_conversation(&conn, "测试会话").unwrap();
+        save_message(&conn, id, "user", "你好").unwrap();
+        save_message(&conn, id, "assistant", "嗨").unwrap();
+        let msgs = load_conversation(&conn, id).unwrap();
+        assert_eq!(msgs.len(), 2);
+        assert_eq!(msgs[0].role, "user");
+        assert_eq!(msgs[0].content, "你好");
+        assert_eq!(msgs[1].role, "assistant");
+        assert_eq!(msgs[1].content, "嗨");
+    }
+
+    #[test]
+    fn first_user_message_becomes_title_truncated() {
+        let conn = test_conn();
+        let id = new_conversation(&conn, "新对话").unwrap();
+        let long = "一二三四五六七八九十一二三四五六七八九十超出部分啊";
+        save_message(&conn, id, "user", long).unwrap();
+        let convs = list_conversations(&conn).unwrap();
+        assert_eq!(convs.len(), 1);
+        assert_eq!(convs[0].title, "一二三四五六七八九十一二三四五六七八九十超出部分…");
+    }
+
+    #[test]
+    fn assistant_first_message_keeps_default_title() {
+        let conn = test_conn();
+        let id = new_conversation(&conn, "新对话").unwrap();
+        save_message(&conn, id, "assistant", "你好呀").unwrap();
+        let convs = list_conversations(&conn).unwrap();
+        assert_eq!(convs[0].title, "新对话");
+    }
+
+    #[test]
+    fn list_sorted_by_updated_at_desc() {
+        let conn = test_conn();
+        let a = new_conversation(&conn, "A").unwrap();
+        let b = new_conversation(&conn, "B").unwrap();
+        // 睡 1.1s 确保时间戳严格递增，避免同一秒排序平局
+        std::thread::sleep(std::time::Duration::from_millis(1100));
+        save_message(&conn, a, "user", "后发的消息").unwrap();
+        let convs = list_conversations(&conn).unwrap();
+        assert_eq!(convs[0].id, a);
+        assert_eq!(convs[1].id, b);
+    }
+
+    #[test]
+    fn delete_conversation_cascades_messages() {
+        let conn = test_conn();
+        let id = new_conversation(&conn, "要删的").unwrap();
+        save_message(&conn, id, "user", "内容").unwrap();
+        delete_conversation(&conn, id).unwrap();
+        assert!(load_conversation(&conn, id).unwrap().is_empty());
+        assert!(list_conversations(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn rename_updates_title() {
+        let conn = test_conn();
+        let id = new_conversation(&conn, "旧标题").unwrap();
+        rename_conversation(&conn, id, "新标题").unwrap();
+        assert_eq!(list_conversations(&conn).unwrap()[0].title, "新标题");
+    }
 }

@@ -43,3 +43,50 @@ pub fn save_config(path: &Path, config: &AppConfig) -> Result<(), String> {
     let json = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
     fs::write(path, json).map_err(|e| format!("写入配置失败: {e}"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_config_fields() {
+        let c = AppConfig::default();
+        assert_eq!(c.provider, "deepseek");
+        assert_eq!(c.model, DEEPSEEK_MODEL);
+        assert_eq!(c.base_url, DEEPSEEK_BASE);
+        assert_eq!(c.temperature, 0.8);
+        assert!(c.api_key.is_empty());
+    }
+
+    #[test]
+    fn save_then_load_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("mindpal-cfg-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        let mut c = AppConfig::default();
+        c.api_key = "sk-test".to_string();
+        c.model = "custom-model".to_string();
+        save_config(&path, &c).unwrap();
+        let loaded = load_config(&path);
+        assert_eq!(loaded.api_key, "sk-test");
+        assert_eq!(loaded.model, "custom-model");
+        assert_eq!(loaded.provider, "deepseek");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn corrupt_file_falls_back_to_default() {
+        let dir = std::env::temp_dir().join(format!("mindpal-cfg-bad-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        std::fs::write(&path, "{not json").unwrap();
+        assert_eq!(load_config(&path).provider, "deepseek");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn missing_file_falls_back_to_default() {
+        let path = std::env::temp_dir().join("mindpal-cfg-nonexistent.json");
+        assert_eq!(load_config(&path).model, DEEPSEEK_MODEL);
+    }
+}
