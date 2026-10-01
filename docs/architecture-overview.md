@@ -88,12 +88,12 @@ Tauri 2.0 App
 
 | 端 | Tauri 2.0 | 说明 |
 |----|:---------:|------|
-| Windows | ✅ | .exe / MSI 安装包 |
-| macOS | ✅ | .dmg / .app |
-| Linux | ✅ | .deb / AppImage |
-| Android | ✅ | .apk / .aab（工程已生成：`src-tauri/gen/android`，CI 自动维护；构建需本机 Android SDK） |
-| iOS | ✅ | .ipa (需 Mac 签名) |
-| Web | ✅ (额外) | 加轻量 API Server，浏览器直接跑 |
+| Windows | ✅ | .exe / NSIS 安装包（release ~3.6MB，CI 已验证） |
+| macOS | ✅ | .dmg / .app（arm64 ~4.5MB，最低 10.15，CI 已验证） |
+| Linux | ✅ | .deb / AppImage（deb ~5.6MB，CI 已验证） |
+| Android | ✅ | .apk / .aab（release arm64 ~11MB；工程 `src-tauri/gen/android`，CI 自动维护 + 出包） |
+| iOS | ✅ | .ipa（工程 `src-tauri/gen/apple` 已生成；真机包需 Mac 签名 + 开发者账号） |
+| Web | ⬜ 二期 | 加轻量 API Server，浏览器直接跑（当前后端走 Tauri IPC，浏览器不可用） |
 
 ## 三阶段路线
 

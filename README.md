@@ -28,6 +28,20 @@
 - ⬜ STT 移动端（whisper.cpp 交叉编译）
 - ⬜ 应用图标换 MindPal 品牌（当前是 Tauri 默认图标）
 
+## 多端产物（release）
+
+| 端 | 产物 | 体积 | 备注 |
+|----|------|------|------|
+| Windows | NSIS 安装包 | ~3.6 MB | exe 本体 ~12 MB；分发需签名 |
+| Linux | .deb | ~5.6 MB | 二进制 ~13 MB |
+| macOS | .dmg (arm64) | ~4.5 MB | 最低系统版本 10.15 |
+| Android | .apk | ~11 MB (arm64) | 4 ABI 各 8-12 MB；已生成工程 + CI 出包 |
+| iOS | 工程已生成（`src-tauri/gen/apple`） | — | 真机包需签名 + 开发者账号 |
+| Web | 未实现 | — | 二期，需另写轻量 API Server |
+
+> 构建方式：`npm run tauri build -- --bundles <deb|nsis|dmg>`；CI 见 `.github/workflows/platforms.yml`（手动 + 每日定时）。
+> 语音能力默认关闭、模型由用户自行下载，**不占包体**。
+
 详细架构见 [`docs/architecture-overview.md`](docs/architecture-overview.md)，测试规划见 [`docs/testing-plan.md`](docs/testing-plan.md)。
 
 ## 开发
