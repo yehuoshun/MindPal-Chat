@@ -1,0 +1,45 @@
+name: Android release APK
+
+# 按需触发：量 release 包体大小 / 出可分发包（需签名才可装真机）
+on:
+  workflow_dispatch:
+
+jobs:
+  release-apk:
+    name: Build release APK (split per ABI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: Build release APKs (per ABI)
+        run: npm run tauri android build -- --apk --split-per-abi
+        timeout-minutes: 60
+      - name: Report sizes
+        run: |
+          echo "=== APK 体积（拆 ABI）==="
+          find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -exec du -h {} + | sort -h
+          echo
+          echo "=== 各 APK 内 lib/*.so 体积（Rust 库为主）==="
+          for apk in $(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk'); do
+            echo "-- $apk"
+            unzip -l "$apk" | grep -E "\.so$" | sort -k1 -n -r | head -5
+          done
+      - name: Upload release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindpal-chat-release-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
