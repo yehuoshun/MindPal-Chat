@@ -21,8 +21,8 @@
 - ✅ 人格系统：`src/personas/*.json`，随包内置（北极熊 / 小鹿），前端可切换
 - ✅ 设置面板：provider / API Key / 模型 / Base URL / 温度，存本地 `config.json`
 - ✅ 长期记忆：对话归档 + 用户画像提取 + 检索注入，设置可查看/删除
-- ✅ Edge TTS 语音：默认朗读，6 个中文音色，CI 真实联网验证协议
-- ✅ 语音输入 STT（桌面端）：whisper.cpp 本地识别，麦克风按钮 + 模型下载（tiny/base/small），录音不上传
+- ✅ 语音朗读（Edge TTS，**默认关闭**，用户可开启；6 个中文音色，CI 真实联网验证协议）
+- ✅ 语音输入 STT（**默认关闭**，桌面端；whisper.cpp 本地识别，开启后按需在本机下载模型，下载前二次确认，录音不上传）
 - ✅ Android 工程：`src-tauri/gen/android`（CI 的 android job 自动生成维护，包名 com.mindpal.chat）
 - ⬜ Android 实际构建（需本机 Android SDK + `npm run tauri android build`）
 - ⬜ STT 移动端（whisper.cpp 交叉编译）

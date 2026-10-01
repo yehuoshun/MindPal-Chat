@@ -16,12 +16,12 @@ pub struct AppConfig {
     pub model: String,
     pub base_url: String,
     pub temperature: f64,
-    #[serde(default = "default_true")]
-    pub voice_enabled: bool, // 朗读助手回复
+    #[serde(default = "default_false")]
+    pub voice_enabled: bool, // 朗读助手回复（默认关，用户自愿开启）
     #[serde(default = "default_voice")]
     pub voice: String,       // Edge TTS 音色
     // 语音输入（STT）—— serde default 保证旧配置文件升级时不丢其它字段
-    #[serde(default = "default_true")]
+    #[serde(default = "default_false")]
     pub stt_enabled: bool,
     #[serde(default = "default_stt_model")]
     pub stt_model: String,
@@ -29,8 +29,8 @@ pub struct AppConfig {
     pub stt_language: String,
 }
 
-fn default_true() -> bool {
-    true
+fn default_false() -> bool {
+    false
 }
 
 fn default_voice() -> String {
@@ -53,9 +53,9 @@ impl Default for AppConfig {
             model: DEEPSEEK_MODEL.to_string(),
             base_url: DEEPSEEK_BASE.to_string(),
             temperature: 0.8,
-            voice_enabled: true,
+            voice_enabled: false,
             voice: "zh-CN-XiaoxiaoNeural".to_string(),
-            stt_enabled: default_true(),
+            stt_enabled: false,
             stt_model: default_stt_model(),
             stt_language: default_stt_language(),
         }
@@ -88,9 +88,10 @@ mod tests {
         assert_eq!(c.base_url, DEEPSEEK_BASE);
         assert_eq!(c.temperature, 0.8);
         assert!(c.api_key.is_empty());
-        assert!(c.voice_enabled);
+        // 语音能力默认关闭，用户自愿开启
+        assert!(!c.voice_enabled);
         assert_eq!(c.voice, "zh-CN-XiaoxiaoNeural");
-        assert!(c.stt_enabled);
+        assert!(!c.stt_enabled);
         assert_eq!(c.stt_model, "base");
         assert_eq!(c.stt_language, "zh");
     }
@@ -110,8 +111,8 @@ mod tests {
         assert_eq!(c.api_key, "sk-old");
         assert_eq!(c.provider, "claude");
         assert!(!c.voice_enabled);
-        // stt 字段回退默认
-        assert!(c.stt_enabled);
+        // stt 字段回退默认（关闭）
+        assert!(!c.stt_enabled);
         assert_eq!(c.stt_model, "base");
         std::fs::remove_dir_all(&dir).ok();
     }

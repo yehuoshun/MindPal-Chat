@@ -215,6 +215,11 @@ function App() {
 
   const downloadSttModel = async () => {
     if (!draft) return;
+    const info = STT_MODELS.find((m) => m.id === draft.stt_model);
+    const confirmed = window.confirm(
+      `将从网上下载语音识别模型到本机（${info?.name ?? draft.stt_model}）。\n确认后开始下载，是否继续？`,
+    );
+    if (!confirmed) return;
     setDownloadingModel(true);
     setSttProgress(null);
     try {
@@ -392,7 +397,7 @@ function App() {
         </div>
 
         <div className="composer">
-          {stt?.supported && (
+          {stt?.supported && config?.stt_enabled && (
             <button
               className={`mic-btn ${recording ? "recording" : ""}`}
               title={recording ? "停止并识别" : "点击说话"}
@@ -471,88 +476,96 @@ function App() {
               />
             </label>
             <div className="voice-section">
-              <h3>语音输入（本地识别）</h3>
+              <h3>语音输入</h3>
               <label className="row">
-                <span>启用语音输入</span>
+                <span>启用语音输入（本地识别）</span>
                 <input
                   type="checkbox"
                   checked={draft.stt_enabled}
                   onChange={(e) => setDraft({ ...draft, stt_enabled: e.target.checked })}
                 />
               </label>
-              <label>
-                识别模型
-                <select
-                  value={draft.stt_model}
-                  onChange={(e) => setDraft({ ...draft, stt_model: e.target.value })}
-                >
-                  {STT_MODELS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="stt-status">
-                {stt === null
-                  ? "…"
-                  : !stt.supported
-                    ? "当前平台暂不支持本地识别（桌面端可用）"
-                    : stt.model_present
+              {draft.stt_enabled && stt?.supported && (
+                <>
+                  <label>
+                    识别模型
+                    <select
+                      value={draft.stt_model}
+                      onChange={(e) => setDraft({ ...draft, stt_model: e.target.value })}
+                    >
+                      {STT_MODELS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="stt-status">
+                    {stt.model_present
                       ? `✅ 模型已就绪：${stt.model}`
-                      : `⚠️ 模型未下载：${stt.model}（约 ${stt.size_mb}MB）`}
-              </div>
-              <div className="modal-actions">
-                <button
-                  className="ghost"
-                  type="button"
-                  onClick={downloadSttModel}
-                  disabled={downloadingModel || !stt?.supported}
-                >
-                  {downloadingModel
-                    ? sttProgress && sttProgress.total
-                      ? `下载中 ${Math.floor((sttProgress.downloaded / sttProgress.total) * 100)}%`
-                      : "下载中…"
-                    : "下载模型"}
-                </button>
-              </div>
-              <p className="hint">
-                识别全在本机完成（whisper.cpp），录音不上传；首次需下载模型（来自 HuggingFace）。
-              </p>
+                      : `⚠️ 模型未下载：${stt.model}（约 ${stt.size_mb}MB），点下方按钮下载`}
+                  </div>
+                  <div className="modal-actions">
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={downloadSttModel}
+                      disabled={downloadingModel || !stt.supported}
+                    >
+                      {downloadingModel
+                        ? sttProgress && sttProgress.total
+                          ? `下载中 ${Math.floor((sttProgress.downloaded / sttProgress.total) * 100)}%`
+                          : "下载中…"
+                        : "下载模型"}
+                    </button>
+                  </div>
+                  <p className="hint">录音与识别都在本机完成（whisper.cpp），不上传；模型来自 HuggingFace。</p>
+                </>
+              )}
+              {draft.stt_enabled && stt && !stt.supported && (
+                <p className="hint">当前平台暂不支持本地识别（桌面端可用）。</p>
+              )}
+              {!draft.stt_enabled && (
+                <p className="hint">开启后可在输入框旁用麦克风说话转文字（需先下载模型）。</p>
+              )}
             </div>
             <div className="voice-section">
-              <h3>语音</h3>
+              <h3>语音朗读</h3>
               <label className="row">
-                <span>朗读回复</span>
+                <span>朗读助手回复</span>
                 <input
                   type="checkbox"
                   checked={draft.voice_enabled}
                   onChange={(e) => setDraft({ ...draft, voice_enabled: e.target.checked })}
                 />
               </label>
-              <label>
-                音色
-                <select
-                  value={draft.voice}
-                  onChange={(e) => setDraft({ ...draft, voice: e.target.value })}
-                >
-                  {VOICES.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="modal-actions">
-                <button
-                  className="ghost"
-                  type="button"
-                  onClick={() => speak("你好，我是你的心灵伙伴，很高兴认识你。", draft.voice, true)}
-                >
-                  试听音色
-                </button>
-              </div>
-              <p className="hint">语音由微软 Edge TTS 在线合成，朗读文本会发送给微软服务，对话内容本身仍只存本地。</p>
+              {draft.voice_enabled && (
+                <>
+                  <label>
+                    音色
+                    <select
+                      value={draft.voice}
+                      onChange={(e) => setDraft({ ...draft, voice: e.target.value })}
+                    >
+                      {VOICES.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="modal-actions">
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={() => speak("你好，我是你的心灵伙伴，很高兴认识你。", draft.voice, true)}
+                    >
+                      试听音色
+                    </button>
+                  </div>
+                  <p className="hint">语音由微软 Edge TTS 在线合成，朗读文本会发送给微软服务。</p>
+                </>
+              )}
             </div>
             <div className="memory-section">
               <h3>记忆（全本地存储）</h3>
