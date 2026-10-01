@@ -116,8 +116,11 @@ jobs:
       - name: Smoke run (启动冒烟)
         run: |
           set +e
-          APP=$(find "src-tauri/target/release/bundle/macos" -type f -path "*.app/Contents/MacOS/*" ! -name "*.dylib" | head -1)
-          if [ -z "$APP" ]; then echo "❌ 未找到可执行文件"; find src-tauri/target/release/bundle -maxdepth 4 | head -30; exit 1; fi
+          APP="src-tauri/target/release/mindpal-chat"
+          if [ ! -f "$APP" ]; then
+            APP=$(find "src-tauri/target/release/bundle" -type f -path "*.app/Contents/MacOS/*" ! -name "*.dylib" | head -1)
+          fi
+          if [ -z "$APP" ] || [ ! -f "$APP" ]; then echo "❌ 未找到可执行文件"; find src-tauri/target/release -maxdepth 2 | head -30; exit 1; fi
           echo "启动: $APP"
           "$APP" > smoke.log 2>&1 &
           PID=$!
