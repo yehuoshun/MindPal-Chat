@@ -116,7 +116,8 @@ jobs:
       - name: Smoke run (启动冒烟)
         run: |
           set +e
-          APP=$(find "src-tauri/target/release/bundle/macos" -maxdepth 4 -type f -path "*.app/Contents/MacOS/*" | head -1)
+          APP=$(find "src-tauri/target/release/bundle/macos" -type f -path "*.app/Contents/MacOS/*" ! -name "*.dylib" | head -1)
+          if [ -z "$APP" ]; then echo "❌ 未找到可执行文件"; find src-tauri/target/release/bundle -maxdepth 4 | head -30; exit 1; fi
           echo "启动: $APP"
           "$APP" > smoke.log 2>&1 &
           PID=$!
