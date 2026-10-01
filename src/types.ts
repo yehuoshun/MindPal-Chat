@@ -22,6 +22,17 @@ export interface AppConfig {
   temperature: number;
   voice_enabled: boolean;
   voice: string;
+  stt_enabled: boolean;
+  stt_model: string;
+  stt_language: string;
+}
+
+export interface SttStatus {
+  supported: boolean;
+  model: string;
+  model_present: boolean;
+  model_path: string;
+  size_mb: number;
 }
 
 export interface ConversationSummary {

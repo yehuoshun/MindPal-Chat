@@ -1,0 +1,4 @@
+# whisper-rs-sys 默认用 bindgen 生成绑定（需要 libclang）。
+# 该 crate 自带预生成绑定，设置此变量可跳过 bindgen，免 libclang 依赖、构建更快。
+[env]
+WHISPER_DONT_GENERATE_BINDINGS = "1"

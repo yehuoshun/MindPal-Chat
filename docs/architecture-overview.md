@@ -17,8 +17,11 @@
 | 语音 STT | **Whisper.cpp** | 本地推理，私密，免费 |
 
 > 一期落地：TTS 已实现（Rust 直接实现 Edge TTS WebSocket 协议，见 `src-tauri/src/tts.rs`，算法与常量对齐 edge-tts Python 库，2026-10 实测可用）；
-> 音频按「音色+文本」哈希缓存到 app_data/tts/，重复文本不重复合成；设置里可开关朗读 + 换音色；STT（Whisper.cpp）二期。
-> ⚠️ 隐私：朗读文本会发送给微软 Edge TTS 服务，对话内容本身仍只存本地。
+> 音频按「音色+文本」哈希缓存到 app_data/tts/，重复文本不重复合成；设置里可开关朗读 + 换音色。
+> **STT 已实现（桌面端）**：`src-tauri/src/stt.rs` 基于 whisper.cpp（whisper-rs），前端 getUserMedia 录音 → PCM → 后端重采样 16kHz → 本地识别 → 回填输入框；
+> 模型（tiny/base/small，32/60/190MB）首次使用从 HuggingFace 下载到 app_data/models/，全本地推理不上传录音。
+> Android/iOS 因 whisper.cpp 交叉编译复杂度留二期（Cargo.toml 里 target 隔离，不影响移动端构建）。
+> ⚠️ 隐私：朗读文本会发送给微软 Edge TTS 服务，录音与识别结果不上传（本地 whisper）；对话内容仍只存本地。
 | 人格系统 | **自定义 JSON / 兼容酒馆角色卡** | 自己定义格式，兼容社区资源 |
 
 ## 核心架构

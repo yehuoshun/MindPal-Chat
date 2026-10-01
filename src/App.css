@@ -446,6 +446,45 @@ body {
   accent-color: var(--accent);
 }
 
+/* ---------- 语音输入 ---------- */
+.stt-status {
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+.mic-btn {
+  background: var(--bg-side);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  font-size: 17px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mic-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.mic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-btn.recording {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--danger);
+  animation: mic-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15);
+  }
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

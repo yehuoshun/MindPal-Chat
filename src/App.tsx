@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import type { AppConfig, ChatMessage, ConversationSummary, MemoryItem, Persona } from "./types";
+import { listen } from "@tauri-apps/api/event";
+import type { AppConfig, ChatMessage, ConversationSummary, MemoryItem, Persona, SttStatus } from "./types";
 import * as api from "./lib/api";
+import { Recorder, pcmToBase64 } from "./lib/recorder";
 import "./App.css";
 
 const PROVIDER_DEFAULTS: Record<string, { model: string; base_url: string }> = {
@@ -17,6 +19,13 @@ const VOICES: { id: string; name: string }[] = [
   { id: "zh-CN-YunjianNeural", name: "云健 · 男（沉稳）" },
   { id: "zh-CN-YunyangNeural", name: "云扬 · 男（新闻）" },
   { id: "zh-CN-YunxiaNeural", name: "云夏 · 男（少年）" },
+];
+
+/** Whisper 本地识别模型 */
+const STT_MODELS: { id: string; name: string }[] = [
+  { id: "tiny", name: "tiny · 快（约 32MB）" },
+  { id: "base", name: "base · 均衡（约 60MB）" },
+  { id: "small", name: "small · 更准（约 190MB）" },
 ];
 
 let currentAudio: HTMLAudioElement | null = null;
@@ -61,16 +70,33 @@ function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [draft, setDraft] = useState<AppConfig | null>(null);
   const [memories, setMemories] = useState<MemoryItem[]>([]);
+  const [stt, setStt] = useState<SttStatus | null>(null);
+  const [sttProgress, setSttProgress] = useState<{ downloaded: number; total: number } | null>(null);
+  const [downloadingModel, setDownloadingModel] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recRef = useRef<Recorder | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // 打开设置时加载记忆列表
+  // 打开设置时加载记忆列表 + 语音输入状态
   useEffect(() => {
     if (showSettings) {
       api.listMemories().then(setMemories).catch((e) => setError(String(e)));
+      api.sttStatus().then(setStt).catch(() => {});
     }
   }, [showSettings]);
+
+  // 初始化时也取一次：决定麦克风按钮是否显示
+  useEffect(() => {
+    api.sttStatus().then(setStt).catch(() => {});
+    let unlisten: (() => void) | undefined;
+    listen<{ downloaded: number; total: number }>("stt-download", (e) => setSttProgress(e.payload)).then(
+      (fn) => (unlisten = fn),
+    );
+    return () => unlisten?.();
+  }, []);
 
   const refreshConversations = () => {
     api.listConversations().then(setConversations).catch((e) => setError(String(e)));
@@ -187,6 +213,79 @@ function App() {
     }
   };
 
+  const downloadSttModel = async () => {
+    if (!draft) return;
+    setDownloadingModel(true);
+    setSttProgress(null);
+    try {
+      await api.sttDownloadModel(draft.stt_model);
+      // 后端识别读 config.stt_model，下载后立即落盘
+      await api.saveConfig(draft);
+      setConfig(draft);
+      setStt(await api.sttStatus());
+      setError(null);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setDownloadingModel(false);
+      setSttProgress(null);
+    }
+  };
+
+  /** 麦克风：点一次开始录，再点一次停止并识别 */
+  const toggleRecord = async () => {
+    if (transcribing) return;
+    if (!recording) {
+      if (!config?.stt_enabled) {
+        setShowSettings(true);
+        setError("语音输入未开启");
+        return;
+      }
+      if (stt && !stt.model_present) {
+        setShowSettings(true);
+        setError(`语音模型未下载（${stt.model}），请先下载`);
+        return;
+      }
+      try {
+        const rec = new Recorder();
+        await rec.start();
+        recRef.current = rec;
+        setRecording(true);
+        setError(null);
+      } catch (e) {
+        setError(`麦克风打开失败：${String(e)}`);
+      }
+      return;
+    }
+    setRecording(false);
+    setTranscribing(true);
+    try {
+      const rec = recRef.current;
+      recRef.current = null;
+      if (!rec) return;
+      const { pcm, sampleRate } = await rec.stop();
+      if (pcm.length < sampleRate * 0.3) {
+        setError("录音太短，请再说一次");
+        return;
+      }
+      const text = await api.sttTranscribe(
+        pcmToBase64(pcm),
+        sampleRate,
+        config?.stt_language || "zh",
+      );
+      if (text) {
+        setInput((prev) => (prev ? `${prev} ${text}` : text));
+        setError(null);
+      } else {
+        setError("没听清，再试一次");
+      }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
   const saveSettings = async () => {
     if (!draft) return;
     try {
@@ -293,6 +392,16 @@ function App() {
         </div>
 
         <div className="composer">
+          {stt?.supported && (
+            <button
+              className={`mic-btn ${recording ? "recording" : ""}`}
+              title={recording ? "停止并识别" : "点击说话"}
+              onClick={toggleRecord}
+              disabled={transcribing}
+            >
+              {transcribing ? "⏳" : recording ? "⏹" : "🎤"}
+            </button>
+          )}
           <textarea
             ref={inputRef}
             value={input}
@@ -361,6 +470,56 @@ function App() {
                 onChange={(e) => setDraft({ ...draft, temperature: Number(e.target.value) })}
               />
             </label>
+            <div className="voice-section">
+              <h3>语音输入（本地识别）</h3>
+              <label className="row">
+                <span>启用语音输入</span>
+                <input
+                  type="checkbox"
+                  checked={draft.stt_enabled}
+                  onChange={(e) => setDraft({ ...draft, stt_enabled: e.target.checked })}
+                />
+              </label>
+              <label>
+                识别模型
+                <select
+                  value={draft.stt_model}
+                  onChange={(e) => setDraft({ ...draft, stt_model: e.target.value })}
+                >
+                  {STT_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="stt-status">
+                {stt === null
+                  ? "…"
+                  : !stt.supported
+                    ? "当前平台暂不支持本地识别（桌面端可用）"
+                    : stt.model_present
+                      ? `✅ 模型已就绪：${stt.model}`
+                      : `⚠️ 模型未下载：${stt.model}（约 ${stt.size_mb}MB）`}
+              </div>
+              <div className="modal-actions">
+                <button
+                  className="ghost"
+                  type="button"
+                  onClick={downloadSttModel}
+                  disabled={downloadingModel || !stt?.supported}
+                >
+                  {downloadingModel
+                    ? sttProgress && sttProgress.total
+                      ? `下载中 ${Math.floor((sttProgress.downloaded / sttProgress.total) * 100)}%`
+                      : "下载中…"
+                    : "下载模型"}
+                </button>
+              </div>
+              <p className="hint">
+                识别全在本机完成（whisper.cpp），录音不上传；首次需下载模型（来自 HuggingFace）。
+              </p>
+            </div>
             <div className="voice-section">
               <h3>语音</h3>
               <label className="row">

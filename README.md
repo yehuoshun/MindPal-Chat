@@ -22,9 +22,10 @@
 - ✅ 设置面板：provider / API Key / 模型 / Base URL / 温度，存本地 `config.json`
 - ✅ 长期记忆：对话归档 + 用户画像提取 + 检索注入，设置可查看/删除
 - ✅ Edge TTS 语音：默认朗读，6 个中文音色，CI 真实联网验证协议
+- ✅ 语音输入 STT（桌面端）：whisper.cpp 本地识别，麦克风按钮 + 模型下载（tiny/base/small），录音不上传
 - ✅ Android 工程：`src-tauri/gen/android`（CI 的 android job 自动生成维护，包名 com.mindpal.chat）
 - ⬜ Android 实际构建（需本机 Android SDK + `npm run tauri android build`）
-- ⬜ 语音 STT（Whisper.cpp）
+- ⬜ STT 移动端（whisper.cpp 交叉编译）
 - ⬜ 应用图标换 MindPal 品牌（当前是 Tauri 默认图标）
 
 详细架构见 [`docs/architecture-overview.md`](docs/architecture-overview.md)，测试规划见 [`docs/testing-plan.md`](docs/testing-plan.md)。
@@ -32,6 +33,8 @@
 ## 开发
 
 前置条件（Linux 需要 webkit2gtk 等系统依赖，见 [Tauri 官方文档](https://tauri.app/start/prerequisites/)）：
+
+- **cmake + C++ 工具链**：语音识别（whisper.cpp）编译需要（Windows 装 cmake + VS Build Tools；Linux `apt install cmake g++`；macOS `brew install cmake`）
 
 ```bash
 npm install

@@ -1,4 +1,4 @@
-import type { Persona, ChatMessage, AppConfig, ConversationSummary, MemoryItem } from "../types";
+import type { Persona, ChatMessage, AppConfig, ConversationSummary, MemoryItem, SttStatus } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -32,6 +32,14 @@ export const clearMemories = () => invoke<void>("clear_memories");
 // ---------- 语音 ----------
 export const ttsSpeak = (text: string, voice: string) =>
   invoke<string>("tts_speak", { text, voice });
+
+// ---------- 语音输入（STT） ----------
+export const sttStatus = () => invoke<SttStatus>("stt_status");
+
+export const sttDownloadModel = (size: string) => invoke<string>("stt_download_model", { size });
+
+export const sttTranscribe = (pcmBase64: string, sampleRate: number, language?: string) =>
+  invoke<string>("stt_transcribe", { pcmBase64, sampleRate, language });
 
 // ---------- 聊天（流式） ----------
 /**

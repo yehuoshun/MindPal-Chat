@@ -2,6 +2,7 @@ mod config;
 mod db;
 mod llm;
 mod memory;
+mod stt;
 mod tts;
 mod types;
 
@@ -9,10 +10,11 @@ use std::sync::Mutex;
 use sha2::Digest;
 use tauri::{Manager, State};
 
-/// 全局状态：SQLite 连接 + 应用配置
+/// 全局状态：SQLite 连接 + 应用配置 + 语音识别上下文缓存
 pub struct AppState {
     pub db: Mutex<rusqlite::Connection>,
     pub config: Mutex<config::AppConfig>,
+    pub whisper: Mutex<Option<stt::SharedContext>>,
 }
 
 // ---------- 配置 ----------
@@ -167,6 +169,7 @@ pub fn run() {
             app.manage(AppState {
                 db: Mutex::new(conn),
                 config: Mutex::new(cfg),
+                whisper: Mutex::new(None),
             });
             Ok(())
         })
@@ -183,6 +186,9 @@ pub fn run() {
             delete_memory,
             clear_memories,
             tts_speak,
+            stt::stt_status,
+            stt::stt_download_model,
+            stt::stt_transcribe,
             chat_stream
         ])
         .run(tauri::generate_context!())

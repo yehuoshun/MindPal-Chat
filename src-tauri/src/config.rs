@@ -16,8 +16,33 @@ pub struct AppConfig {
     pub model: String,
     pub base_url: String,
     pub temperature: f64,
+    #[serde(default = "default_true")]
     pub voice_enabled: bool, // 朗读助手回复
+    #[serde(default = "default_voice")]
     pub voice: String,       // Edge TTS 音色
+    // 语音输入（STT）—— serde default 保证旧配置文件升级时不丢其它字段
+    #[serde(default = "default_true")]
+    pub stt_enabled: bool,
+    #[serde(default = "default_stt_model")]
+    pub stt_model: String,
+    #[serde(default = "default_stt_language")]
+    pub stt_language: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_voice() -> String {
+    "zh-CN-XiaoxiaoNeural".to_string()
+}
+
+fn default_stt_model() -> String {
+    "base".to_string()
+}
+
+fn default_stt_language() -> String {
+    "zh".to_string()
 }
 
 impl Default for AppConfig {
@@ -30,6 +55,9 @@ impl Default for AppConfig {
             temperature: 0.8,
             voice_enabled: true,
             voice: "zh-CN-XiaoxiaoNeural".to_string(),
+            stt_enabled: default_true(),
+            stt_model: default_stt_model(),
+            stt_language: default_stt_language(),
         }
     }
 }
@@ -62,6 +90,30 @@ mod tests {
         assert!(c.api_key.is_empty());
         assert!(c.voice_enabled);
         assert_eq!(c.voice, "zh-CN-XiaoxiaoNeural");
+        assert!(c.stt_enabled);
+        assert_eq!(c.stt_model, "base");
+        assert_eq!(c.stt_language, "zh");
+    }
+
+    #[test]
+    fn legacy_config_without_stt_fields_still_loads() {
+        // 旧版 config.json（无 stt_* 字段）升级后不应丢 api_key 等已有值
+        let dir = std::env::temp_dir().join(format!("mindpal-cfg-legacy-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        std::fs::write(
+            &path,
+            r#"{"provider":"claude","api_key":"sk-old","model":"m","base_url":"u","temperature":0.5,"voice_enabled":false,"voice":"v"}"#,
+        )
+        .unwrap();
+        let c = load_config(&path);
+        assert_eq!(c.api_key, "sk-old");
+        assert_eq!(c.provider, "claude");
+        assert!(!c.voice_enabled);
+        // stt 字段回退默认
+        assert!(c.stt_enabled);
+        assert_eq!(c.stt_model, "base");
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
