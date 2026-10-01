@@ -3,7 +3,8 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { AppConfig, ChatMessage, ConversationSummary, MemoryItem, Persona, SttStatus } from "./types";
 import * as api from "./lib/api";
-import { Recorder, pcmToBase64 } from "./lib/recorder";
+import { Recorder } from "./lib/recorder";
+import { pcmToBase64 } from "./lib/audio";
 import "./App.css";
 
 const PROVIDER_DEFAULTS: Record<string, { model: string; base_url: string }> = {

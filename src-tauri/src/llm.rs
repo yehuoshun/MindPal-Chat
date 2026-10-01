@@ -14,19 +14,33 @@ pub async fn stream_chat(
     system_prompt: &str,
     messages: &[ChatMessage],
 ) -> Result<String, String> {
-    match cfg.provider.as_str() {
-        "claude" => stream_claude(app, client, cfg, system_prompt, messages).await,
-        _ => stream_openai_compatible(app, client, cfg, system_prompt, messages).await,
-    }
+    stream_chat_with(client, cfg, system_prompt, messages, |delta| {
+        let _ = app.emit("llm-token", delta);
+    })
+    .await
 }
 
-/// OpenAI 兼容协议（DeepSeek / 大多数国内模型）
-async fn stream_openai_compatible(
-    app: &AppHandle,
+/// 流式聊天主逻辑（不依赖 Tauri 句柄，可用 mock 服务端做集成测试）
+pub async fn stream_chat_with(
     client: &Client,
     cfg: &AppConfig,
     system_prompt: &str,
     messages: &[ChatMessage],
+    on_token: impl FnMut(&str),
+) -> Result<String, String> {
+    match cfg.provider.as_str() {
+        "claude" => claude_chat(client, cfg, system_prompt, messages, on_token).await,
+        _ => openai_chat(client, cfg, system_prompt, messages, on_token).await,
+    }
+}
+
+/// OpenAI 兼容协议（DeepSeek / 大多数国内模型）
+async fn openai_chat(
+    client: &Client,
+    cfg: &AppConfig,
+    system_prompt: &str,
+    messages: &[ChatMessage],
+    on_token: impl FnMut(&str),
 ) -> Result<String, String> {
     let mut api_messages: Vec<serde_json::Value> = Vec::new();
     if !system_prompt.trim().is_empty() {
@@ -55,15 +69,7 @@ async fn stream_openai_compatible(
         let text = resp.text().await.unwrap_or_default();
         return Err(format!("LLM API 错误 {status}: {text}"));
     }
-    sse_loop_openai(app, resp).await
-}
-
-/// 解析 OpenAI 兼容 SSE：`data: {json}` / `data: [DONE]`
-async fn sse_loop_openai(app: &AppHandle, resp: reqwest::Response) -> Result<String, String> {
-    consume_sse_openai(resp, |delta| {
-        let _ = app.emit("llm-token", delta);
-    })
-    .await
+    consume_sse_openai(resp, on_token).await
 }
 
 /// OpenAI 兼容 SSE 消费（纯逻辑，可测）：逐块拼文本，[DONE] 提前结束
@@ -99,12 +105,12 @@ async fn consume_sse_openai(
 }
 
 /// Anthropic Claude：x-api-key 头 + system 字段独立 + SSE 事件类型不同
-async fn stream_claude(
-    app: &AppHandle,
+async fn claude_chat(
     client: &Client,
     cfg: &AppConfig,
     system_prompt: &str,
     messages: &[ChatMessage],
+    on_token: impl FnMut(&str),
 ) -> Result<String, String> {
     let api_messages: Vec<serde_json::Value> = messages
         .iter()
@@ -133,15 +139,7 @@ async fn stream_claude(
         let text = resp.text().await.unwrap_or_default();
         return Err(format!("LLM API 错误 {status}: {text}"));
     }
-    sse_loop_claude(app, resp).await
-}
-
-/// 解析 Claude SSE：content_block_delta 事件里的 delta.text
-async fn sse_loop_claude(app: &AppHandle, resp: reqwest::Response) -> Result<String, String> {
-    consume_sse_claude(resp, |delta| {
-        let _ = app.emit("llm-token", delta);
-    })
-    .await
+    consume_sse_claude(resp, on_token).await
 }
 
 /// Claude SSE 消费（纯逻辑，可测）：content_block_delta 事件取 delta.text
@@ -257,5 +255,152 @@ mod tests {
         assert_eq!(resp.status().as_u16(), 500);
         let full = consume_sse_openai(resp, |_| {}).await.unwrap();
         assert!(full.is_empty());
+    }
+
+    // ---------- 请求级集成测试：mock 服务端抓原始请求 ----------
+
+    /// 完整读取一个 HTTP 请求（头部 + Content-Length 指定长度）
+    fn read_full_request(stream: &mut std::net::TcpStream) -> String {
+        let mut data: Vec<u8> = Vec::new();
+        let mut buf = [0u8; 4096];
+        loop {
+            match stream.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    data.extend_from_slice(&buf[..n]);
+                    let text = String::from_utf8_lossy(&data).to_string();
+                    if let Some(pos) = text.find("\r\n\r\n") {
+                        let clen = text[..pos]
+                            .lines()
+                            .find_map(|l| {
+                                l.to_lowercase()
+                                    .strip_prefix("content-length:")
+                                    .map(|v| v.trim().parse::<usize>().unwrap_or(0))
+                            })
+                            .unwrap_or(0);
+                        if data.len() >= pos + 4 + clen {
+                            break;
+                        }
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+        String::from_utf8_lossy(&data).to_string()
+    }
+
+    /// 起一个记录原始请求的 mock 服务器，返回 (base_url, 捕获的请求)
+    fn spawn_capturing_server(
+        body: &'static str,
+    ) -> (String, std::sync::Arc<std::sync::Mutex<String>>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let captured = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+        let sink = captured.clone();
+        std::thread::spawn(move || {
+            if let Ok(mut stream) = listener.accept().map(|(s, _)| s) {
+                *sink.lock().unwrap() = read_full_request(&mut stream);
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = stream.write_all(resp.as_bytes());
+            }
+        });
+        (format!("http://{addr}"), captured)
+    }
+
+    fn test_cfg(provider: &str, base_url: String) -> AppConfig {
+        AppConfig {
+            provider: provider.to_string(),
+            api_key: "sk-test-key".to_string(),
+            model: "test-model".to_string(),
+            base_url,
+            ..AppConfig::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn openai_chat_end_to_end_against_mock() {
+        let body = "data: {\"choices\":[{\"delta\":{\"content\":\"流\"}}]}\n\n\
+                    data: {\"choices\":[{\"delta\":{\"content\":\"式\"}}]}\n\n\
+                    data: [DONE]\n\n";
+        let (url, captured) = spawn_capturing_server(body);
+        let cfg = test_cfg("deepseek", url);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: "在吗".into(),
+        }];
+        let mut tokens: Vec<String> = Vec::new();
+        let full = stream_chat_with(&Client::new(), &cfg, "你是北极熊", &messages, |t| {
+            tokens.push(t.to_string())
+        })
+        .await
+        .unwrap();
+        assert_eq!(full, "流式");
+        assert_eq!(tokens, vec!["流", "式"]);
+
+        let req = captured.lock().unwrap().clone();
+        let lower = req.to_lowercase();
+        assert!(req.starts_with("POST /chat/completions"), "req={req}");
+        assert!(lower.contains("authorization: bearer sk-test-key"), "req={req}");
+        assert!(req.contains("\"stream\":true"), "req={req}");
+        assert!(req.contains("test-model"), "req={req}");
+        assert!(req.contains("你是北极熊"), "req={req}"); // system prompt 注入
+        assert!(req.contains("在吗"), "req={req}");
+        assert!(req.contains("\"role\":\"system\""), "req={req}");
+    }
+
+    #[tokio::test]
+    async fn claude_chat_end_to_end_against_mock() {
+        let body = "event: content_block_delta\n\
+                    data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"噦\"}}\n\n\
+                    event: message_stop\n\
+                    data: {\"type\":\"message_stop\"}\n\n";
+        let (url, captured) = spawn_capturing_server(body);
+        let cfg = test_cfg("claude", url);
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: "hi".into(),
+        }];
+        let mut tokens: Vec<String> = Vec::new();
+        let full = stream_chat_with(&Client::new(), &cfg, "sys-prompt", &messages, |t| {
+            tokens.push(t.to_string())
+        })
+        .await
+        .unwrap();
+        assert_eq!(full, "噦");
+        assert_eq!(tokens, vec!["噦"]);
+
+        let req = captured.lock().unwrap().clone();
+        let lower = req.to_lowercase();
+        assert!(req.starts_with("POST /messages"), "req={req}");
+        assert!(lower.contains("x-api-key: sk-test-key"), "req={req}");
+        assert!(lower.contains("anthropic-version: 2023-06-01"), "req={req}");
+        assert!(req.contains("\"system\":\"sys-prompt\""), "req={req}");
+    }
+
+    #[tokio::test]
+    async fn chat_surfaces_api_error_status() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            if let Ok(mut stream) = listener.accept().map(|(s, _)| s) {
+                let _ = read_full_request(&mut stream);
+                let _ = stream.write_all(
+                    b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 11\r\nConnection: close\r\n\r\n{\"e\":\"bad\"}",
+                );
+            }
+        });
+        let cfg = test_cfg("deepseek", format!("http://{addr}"));
+        let messages = vec![ChatMessage {
+            role: "user".into(),
+            content: "x".into(),
+        }];
+        let err = stream_chat_with(&Client::new(), &cfg, "", &messages, |_| {})
+            .await
+            .unwrap_err();
+        assert!(err.contains("401"), "err={err}");
     }
 }

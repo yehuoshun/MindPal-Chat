@@ -1,7 +1,10 @@
 /**
  * 麦克风录音：getUserMedia → ScriptProcessor 采集 Float32 PCM → 停止时转 i16 + base64
  * 采样率交给后端重采样到 16kHz（Whisper 要求）
+ * 纯数据处理函数在 ./audio（单独单测）
  */
+
+import { floatToI16, mergeFloat32 } from "./audio";
 
 export interface RecordingResult {
   pcm: Int16Array;
@@ -48,21 +51,9 @@ export class Recorder {
     await this.ctx?.close().catch(() => {});
     this.ctx = null;
 
-    const total = this.chunks.reduce((n, c) => n + c.length, 0);
-    const all = new Float32Array(total);
-    let off = 0;
-    for (const c of this.chunks) {
-      all.set(c, off);
-      off += c.length;
-    }
+    const all = mergeFloat32(this.chunks);
     this.chunks = [];
-
-    const pcm = new Int16Array(all.length);
-    for (let i = 0; i < all.length; i++) {
-      const s = Math.max(-1, Math.min(1, all[i]));
-      pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-    }
-    return { pcm, sampleRate };
+    return { pcm: floatToI16(all), sampleRate };
   }
 
   cancel() {
@@ -76,15 +67,4 @@ export class Recorder {
     this.ctx = null;
     this.chunks = [];
   }
-}
-
-/** Int16 PCM → base64（分块避免 fromCharCode 参数过多爆栈） */
-export function pcmToBase64(pcm: Int16Array): string {
-  const bytes = new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength);
-  let bin = "";
-  const CHUNK = 0x2000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(bin);
 }

@@ -1,3 +1,4 @@
+use crate::types::ChatMessage;
 use rusqlite::{params, params_from_iter, Connection};
 use serde::Serialize;
 
@@ -143,6 +144,28 @@ pub fn extract_facts(content: &str) -> Vec<String> {
     facts
 }
 
+/// 记忆管线（不依赖 Tauri，可测）：
+/// 归档最后一条用户消息 + 提取画像事实 + 检索并注入上下文，返回注入后的 system prompt
+pub fn apply_memory(conn: &Connection, system_prompt: &str, messages: &[ChatMessage]) -> String {
+    let Some(last_user) = messages.iter().rev().find(|m| m.role == "user") else {
+        return system_prompt.to_string();
+    };
+    // 1) 提取画像事实（去重）
+    for fact in extract_facts(&last_user.content) {
+        if !fact_exists(conn, &fact).unwrap_or(false) {
+            let _ = add_memory(conn, &fact, "fact");
+        }
+    }
+    // 2) 检索历史记忆并注入（先检索后归档，避免注入用户刚说的这句自己）
+    let injected = match build_memory_context(conn, &last_user.content, 6) {
+        Ok(ctx) if !ctx.is_empty() => format!("{system_prompt}\n\n{ctx}"),
+        _ => system_prompt.to_string(),
+    };
+    // 3) 归档本条用户消息（供后续对话检索）
+    let _ = add_memory(conn, &last_user.content, "chat");
+    injected
+}
+
 /// 检索记忆并格式化为注入 LLM 的上下文；无命中返回空串
 pub fn build_memory_context(conn: &Connection, query: &str, limit: usize) -> Result<String, String> {
     let hits = search_memories(conn, query, limit)?;
@@ -266,6 +289,57 @@ mod tests {
         add_memory(&conn, "a", "chat").unwrap();
         add_memory(&conn, "b", "chat").unwrap();
         clear_memories(&conn).unwrap();
+        assert!(list_memories(&conn).unwrap().is_empty());
+    }
+
+    // ---------- 记忆管线（apply_memory）----------
+
+    fn user_msg(content: &str) -> Vec<ChatMessage> {
+        vec![ChatMessage {
+            role: "user".to_string(),
+            content: content.to_string(),
+        }]
+    }
+
+    #[test]
+    fn apply_memory_archives_and_extracts_fact() {
+        let conn = test_conn();
+        let sys = apply_memory(&conn, "基座提示词", &user_msg("我叫小明，我喜欢喝咖啡"));
+        let all = list_memories(&conn).unwrap();
+        assert!(all.iter().any(|m| m.kind == "chat" && m.content.contains("我叫小明")));
+        assert!(all.iter().any(|m| m.kind == "fact" && m.content == "用户名字叫小明"));
+        assert!(all.iter().any(|m| m.kind == "fact" && m.content == "用户喜欢喝咖啡"));
+        // 无历史记忆时不应注入（也不能把用户刚说的这句当记忆注入）
+        assert_eq!(sys, "基座提示词");
+    }
+
+    #[test]
+    fn apply_memory_injects_prior_memory() {
+        let conn = test_conn();
+        add_memory(&conn, "用户养了一只橘猫", "fact").unwrap();
+        let sys = apply_memory(&conn, "SYS", &user_msg("橘猫"));
+        assert!(sys.starts_with("SYS"));
+        assert!(sys.contains("[来自记忆的上下文"));
+        assert!(sys.contains("用户养了一只橘猫"));
+    }
+
+    #[test]
+    fn apply_memory_no_hit_keeps_prompt() {
+        let conn = test_conn();
+        let sys = apply_memory(&conn, "SYS", &user_msg("今天天气不错"));
+        assert_eq!(sys, "SYS");
+        // 但消息仍被归档
+        assert!(list_memories(&conn).unwrap().iter().any(|m| m.kind == "chat"));
+    }
+
+    #[test]
+    fn apply_memory_without_user_message() {
+        let conn = test_conn();
+        let msgs = vec![ChatMessage {
+            role: "assistant".to_string(),
+            content: "你好".to_string(),
+        }];
+        assert_eq!(apply_memory(&conn, "SYS", &msgs), "SYS");
         assert!(list_memories(&conn).unwrap().is_empty());
     }
 }

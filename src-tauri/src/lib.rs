@@ -132,23 +132,12 @@ async fn chat_stream(
     }
 
     // 记忆：归档本条用户消息 + 提取画像事实 + 检索注入上下文
-    let mut sys = system_prompt.clone();
-    if memory_enabled {
+    let sys = if memory_enabled {
         let conn = state.db.lock().unwrap();
-        if let Some(last_user) = messages.iter().rev().find(|m| m.role == "user") {
-            let _ = memory::add_memory(&conn, &last_user.content, "chat");
-            for fact in memory::extract_facts(&last_user.content) {
-                if !memory::fact_exists(&conn, &fact).unwrap_or(false) {
-                    let _ = memory::add_memory(&conn, &fact, "fact");
-                }
-            }
-            if let Ok(ctx) = memory::build_memory_context(&conn, &last_user.content, 6) {
-                if !ctx.is_empty() {
-                    sys = format!("{}\n\n{}", system_prompt, ctx);
-                }
-            }
-        }
-    }
+        memory::apply_memory(&conn, &system_prompt, &messages)
+    } else {
+        system_prompt.clone()
+    };
 
     let client = reqwest::Client::new();
     llm::stream_chat(&app, &client, &cfg, &sys, &messages).await

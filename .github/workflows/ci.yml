@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - name: Install deps
         run: npm ci
+      - name: Unit tests (vitest)
+        run: npm run test
       - name: Type check + build
         run: npm run build
 
