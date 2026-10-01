@@ -1,0 +1,474 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0041630C713124B1A77E641E /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CD69AD0AACC1F5265557E64 /* Security.framework */; };
+		0935312759C369831C214320 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 5FE524BABA62C2DA6E98D7A2 /* assets */; };
+		137091CBABB69D2E57F202F5 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CBDBFF7ACC7A67427AAC3D3 /* CoreGraphics.framework */; };
+		15B8AAB8F3448D5FD1B5AFBA /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39393DB063D1CED9B989A980 /* UIKit.framework */; };
+		3C66D31C50C346C06B62BB34 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = FBF75F9E183D105DEE8C1D24 /* main.mm */; };
+		4346470706669916AC9F5553 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E386571D5B6C87D4B432F6E /* MetalKit.framework */; };
+		456B69E9FA571918CF783DF2 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 75C02CFF8B861BF01ECBD6DB /* QuartzCore.framework */; };
+		82318955522CB19985049FF0 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBBB904E70FC9CEE2E4BFC65 /* Metal.framework */; };
+		8C7BF20E3ACF8EEC572B37D2 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CFB07B889AA2EAB2F150963C /* LaunchScreen.storyboard */; };
+		8E2849990A71767C51BE1938 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E9C21491554923A75694EA84 /* Assets.xcassets */; };
+		D2DE4866B8AD072D2F2E65A1 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AB57737F3040202464FF75D5 /* WebKit.framework */; };
+		F3426A308027B34D1358D5A5 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FB6221D697CD03F0FCB9E9A8 /* libapp.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		05A57A3EFE4DEBDFF980BDA6 /* types.rs */ = {isa = PBXFileReference; path = types.rs; sourceTree = "<group>"; };
+		0CD69AD0AACC1F5265557E64 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		0CDCF3EC53ECDEE0CA7375C5 /* mindpal-chat_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "mindpal-chat_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		39393DB063D1CED9B989A980 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		3C6C61BA6B46DE5BAE05C2BA /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		3CBDBFF7ACC7A67427AAC3D3 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		5FE524BABA62C2DA6E98D7A2 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		610CFFCE880899DAD6C630FB /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		64FFF469819F0424839D3E84 /* db.rs */ = {isa = PBXFileReference; path = db.rs; sourceTree = "<group>"; };
+		6E386571D5B6C87D4B432F6E /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		75C02CFF8B861BF01ECBD6DB /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		7B97862C4BA38D401E21AF40 /* stt.rs */ = {isa = PBXFileReference; path = stt.rs; sourceTree = "<group>"; };
+		9114556C086842C06D7F41C0 /* llm.rs */ = {isa = PBXFileReference; path = llm.rs; sourceTree = "<group>"; };
+		A10EF1C4FCD4E67327267777 /* config.rs */ = {isa = PBXFileReference; path = config.rs; sourceTree = "<group>"; };
+		AB57737F3040202464FF75D5 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		B21D98950EFDE62BABE6C87D /* memory.rs */ = {isa = PBXFileReference; path = memory.rs; sourceTree = "<group>"; };
+		CA6B7333CE7CDC6377F1A87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		CFB07B889AA2EAB2F150963C /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		E4732EBB4D0B7902AD49C91F /* tts.rs */ = {isa = PBXFileReference; path = tts.rs; sourceTree = "<group>"; };
+		E9C21491554923A75694EA84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EDD93D4E14BFF7D688C21C00 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		F19D79AAA9E120D8A2AA0C04 /* mindpal-chat_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "mindpal-chat_iOS.entitlements"; sourceTree = "<group>"; };
+		FB6221D697CD03F0FCB9E9A8 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		FBBB904E70FC9CEE2E4BFC65 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		FBF75F9E183D105DEE8C1D24 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		07840A49E7A5695525B530F5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3426A308027B34D1358D5A5 /* libapp.a in Frameworks */,
+				137091CBABB69D2E57F202F5 /* CoreGraphics.framework in Frameworks */,
+				82318955522CB19985049FF0 /* Metal.framework in Frameworks */,
+				4346470706669916AC9F5553 /* MetalKit.framework in Frameworks */,
+				456B69E9FA571918CF783DF2 /* QuartzCore.framework in Frameworks */,
+				0041630C713124B1A77E641E /* Security.framework in Frameworks */,
+				15B8AAB8F3448D5FD1B5AFBA /* UIKit.framework in Frameworks */,
+				D2DE4866B8AD072D2F2E65A1 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2F6163F0E761F7B9D2AEC2CD /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				610CFFCE880899DAD6C630FB /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		4CD24D4D65803DA7C6AF599A /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				FBCFC184C741E0D2DDEAB05D /* mindpal-chat */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		7AFF0B682247EF33D733A7DA /* src */ = {
+			isa = PBXGroup;
+			children = (
+				A10EF1C4FCD4E67327267777 /* config.rs */,
+				64FFF469819F0424839D3E84 /* db.rs */,
+				EDD93D4E14BFF7D688C21C00 /* lib.rs */,
+				9114556C086842C06D7F41C0 /* llm.rs */,
+				3C6C61BA6B46DE5BAE05C2BA /* main.rs */,
+				B21D98950EFDE62BABE6C87D /* memory.rs */,
+				7B97862C4BA38D401E21AF40 /* stt.rs */,
+				E4732EBB4D0B7902AD49C91F /* tts.rs */,
+				05A57A3EFE4DEBDFF980BDA6 /* types.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		94C5E103DDADD4289C3A96CC /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		9AD67B939EA2BFE08DB18696 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3CBDBFF7ACC7A67427AAC3D3 /* CoreGraphics.framework */,
+				FB6221D697CD03F0FCB9E9A8 /* libapp.a */,
+				FBBB904E70FC9CEE2E4BFC65 /* Metal.framework */,
+				6E386571D5B6C87D4B432F6E /* MetalKit.framework */,
+				75C02CFF8B861BF01ECBD6DB /* QuartzCore.framework */,
+				0CD69AD0AACC1F5265557E64 /* Security.framework */,
+				39393DB063D1CED9B989A980 /* UIKit.framework */,
+				AB57737F3040202464FF75D5 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A19E793C58C2E5D909C482E6 /* mindpal-chat_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				CA6B7333CE7CDC6377F1A87E /* Info.plist */,
+				F19D79AAA9E120D8A2AA0C04 /* mindpal-chat_iOS.entitlements */,
+			);
+			path = "mindpal-chat_iOS";
+			sourceTree = "<group>";
+		};
+		A2EEC25244556D9FF9CE6EEC = {
+			isa = PBXGroup;
+			children = (
+				5FE524BABA62C2DA6E98D7A2 /* assets */,
+				E9C21491554923A75694EA84 /* Assets.xcassets */,
+				CFB07B889AA2EAB2F150963C /* LaunchScreen.storyboard */,
+				94C5E103DDADD4289C3A96CC /* Externals */,
+				A19E793C58C2E5D909C482E6 /* mindpal-chat_iOS */,
+				4CD24D4D65803DA7C6AF599A /* Sources */,
+				7AFF0B682247EF33D733A7DA /* src */,
+				9AD67B939EA2BFE08DB18696 /* Frameworks */,
+				BF74C1EA17A280C92C5A4217 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BF74C1EA17A280C92C5A4217 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0CDCF3EC53ECDEE0CA7375C5 /* mindpal-chat_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FBCFC184C741E0D2DDEAB05D /* mindpal-chat */ = {
+			isa = PBXGroup;
+			children = (
+				FBF75F9E183D105DEE8C1D24 /* main.mm */,
+				2F6163F0E761F7B9D2AEC2CD /* bindings */,
+			);
+			path = "mindpal-chat";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		28ADE7AF55FB33A57817B88C /* mindpal-chat_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09032BFB16E079BEFA6E10EC /* Build configuration list for PBXNativeTarget "mindpal-chat_iOS" */;
+			buildPhases = (
+				9FD2A26DAA674F93E01CCA6E /* Build Rust Code */,
+				1ECF818876EC34D7DDAD6473 /* Sources */,
+				0E5A6A72DC8D80D52CDB03EC /* Resources */,
+				07840A49E7A5695525B530F5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "mindpal-chat_iOS";
+			packageProductDependencies = (
+			);
+			productName = "mindpal-chat_iOS";
+			productReference = 0CDCF3EC53ECDEE0CA7375C5 /* mindpal-chat_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		43F49B72F4D2FB55EE144412 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 4DA5AFBC3BF8138EDF46F1E4 /* Build configuration list for PBXProject "mindpal-chat" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A2EEC25244556D9FF9CE6EEC;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BF74C1EA17A280C92C5A4217 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				28ADE7AF55FB33A57817B88C /* mindpal-chat_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0E5A6A72DC8D80D52CDB03EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E2849990A71767C51BE1938 /* Assets.xcassets in Resources */,
+				8C7BF20E3ACF8EEC572B37D2 /* LaunchScreen.storyboard in Resources */,
+				0935312759C369831C214320 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		9FD2A26DAA674F93E01CCA6E /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform \"${PLATFORM_DISPLAY_NAME:?}\" --sdk-root \"${SDKROOT:?}\" --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration \"${CONFIGURATION:?}\" ${FORCE_COLOR} ${ARCHS:?}\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1ECF818876EC34D7DDAD6473 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C66D31C50C346C06B62BB34 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		953295AF41E1CD410DB454E2 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		A5F8A49AFAC366286C5D86CA /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "mindpal-chat_iOS/mindpal-chat_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "mindpal-chat_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mindpal.chat;
+				PRODUCT_NAME = "MindPal Chat";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		A76100D20227C239412873C5 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		C2B6E4732A261147C1E592A6 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "mindpal-chat_iOS/mindpal-chat_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "mindpal-chat_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mindpal.chat;
+				PRODUCT_NAME = "MindPal Chat";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		09032BFB16E079BEFA6E10EC /* Build configuration list for PBXNativeTarget "mindpal-chat_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5F8A49AFAC366286C5D86CA /* debug */,
+				C2B6E4732A261147C1E592A6 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		4DA5AFBC3BF8138EDF46F1E4 /* Build configuration list for PBXProject "mindpal-chat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				953295AF41E1CD410DB454E2 /* debug */,
+				A76100D20227C239412873C5 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 43F49B72F4D2FB55EE144412 /* Project object */;
+}
