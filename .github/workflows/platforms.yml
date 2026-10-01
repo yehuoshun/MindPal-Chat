@@ -1,0 +1,128 @@
+name: Platforms
+
+# 多端构建验证：桌面三端 release 产物 + iOS 工程初始化
+# 触发：手动 + 每日定时（不进每次 push，避免拖慢反馈）
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *" # 每日 UTC 18:00（北京时间 02:00）
+
+jobs:
+  linux:
+    name: Linux build (deb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run tauri build -- --bundles deb
+        timeout-minutes: 60
+      - name: Report size
+        run: |
+          echo "=== deb ==="
+          find src-tauri/target/release/bundle -name '*.deb' -exec du -h {} +
+          echo "=== 可执行文件 ==="
+          du -h src-tauri/target/release/mindpal-chat 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindpal-chat-linux-deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
+
+  windows:
+    name: Windows build (nsis)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run tauri build -- --bundles nsis
+        timeout-minutes: 60
+      - name: Report size
+        shell: bash
+        run: |
+          echo "=== installer ==="
+          find src-tauri/target/release/bundle -name '*.exe' -exec du -h {} +
+          echo "=== exe ==="
+          du -h src-tauri/target/release/mindpal-chat.exe 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindpal-chat-windows-installer
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+  macos:
+    name: macOS build (dmg)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run tauri build -- --bundles dmg
+        timeout-minutes: 60
+      - name: Report size
+        run: |
+          echo "=== dmg / app ==="
+          find src-tauri/target/release/bundle -name '*.dmg' -exec du -h {} +
+          du -sh src-tauri/target/release/bundle/macos/*.app 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindpal-chat-macos-dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+
+  ios-init:
+    name: iOS project files (tauri ios init)
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Generate iOS project
+        run: npm run tauri ios init
+        timeout-minutes: 30
+      - name: Commit generated files (if any)
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore: iOS 工程生成（tauri ios init 自动提交）"
+            git push
+          else
+            echo "no changes to commit"
+          fi

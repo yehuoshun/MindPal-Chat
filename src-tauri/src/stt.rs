@@ -34,21 +34,21 @@ pub struct SttStatus {
 
 // ---------- 平台能力 ----------
 
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub fn platform_supported() -> bool {
     true
 }
 
-#[cfg(target_os = "android")]
+#[cfg(any(target_os = "android", target_os = "ios"))]
 pub fn platform_supported() -> bool {
     false
 }
 
 /// 已加载的 whisper 上下文类型（Android 下为占位，保持 AppState 统一）
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub type SharedContext = std::sync::Arc<whisper_rs::WhisperContext>;
 
-#[cfg(target_os = "android")]
+#[cfg(any(target_os = "android", target_os = "ios"))]
 pub type SharedContext = ();
 
 // ---------- 模型映射（纯函数，可测） ----------
@@ -171,7 +171,7 @@ pub fn models_dir(app_data_dir: &Path) -> PathBuf {
 
 // ---------- 引擎（桌面端） ----------
 
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod engine {
     use super::SharedContext;
     use std::path::Path;
@@ -276,7 +276,7 @@ pub async fn stt_transcribe(
     transcribe_impl(app, state, pcm_base64, sample_rate, language).await
 }
 
-#[cfg(target_os = "android")]
+#[cfg(any(target_os = "android", target_os = "ios"))]
 async fn transcribe_impl(
     _app: tauri::AppHandle,
     _state: tauri::State<'_, crate::AppState>,
@@ -287,7 +287,7 @@ async fn transcribe_impl(
     Err("当前平台暂不支持本地语音识别".to_string())
 }
 
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 async fn transcribe_impl(
     app: tauri::AppHandle,
     state: tauri::State<'_, crate::AppState>,
