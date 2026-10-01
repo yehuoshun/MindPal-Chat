@@ -11,6 +11,8 @@ jobs:
   linux:
     name: Linux build (deb)
     runs-on: ubuntu-latest
+    env:
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux system deps
@@ -44,6 +46,9 @@ jobs:
   windows:
     name: Windows build (nsis)
     runs-on: windows-latest
+    env:
+      # Windows 需 bindgen 生成平台绑定，指向 runner 预装 LLVM 的 libclang
+      LIBCLANG_PATH: C:\Program Files\LLVM\bin
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -74,6 +79,9 @@ jobs:
   macos:
     name: macOS build (dmg)
     runs-on: macos-latest
+    env:
+      # whisper.cpp 用 std::filesystem，需 10.15+
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

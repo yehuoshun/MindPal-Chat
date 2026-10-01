@@ -35,6 +35,8 @@
 前置条件（Linux 需要 webkit2gtk 等系统依赖，见 [Tauri 官方文档](https://tauri.app/start/prerequisites/)）：
 
 - **cmake + C++ 工具链**：语音识别（whisper.cpp）编译需要（Windows 装 cmake + VS Build Tools；Linux `apt install cmake g++`；macOS `brew install cmake`）
+- **libclang**（Windows/macOS 需要）：whisper 绑定生成用——Windows 装 LLVM（并设 `LIBCLANG_PATH`），macOS 自带 Xcode 的 libclang；Linux 用 crate 自带预生成绑定，无需额外装
+- **macOS**：最低系统版本 10.15（whisper.cpp 用了 `std::filesystem`）
 
 ```bash
 npm install
