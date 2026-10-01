@@ -467,4 +467,56 @@ mod tests {
         assert!(err.contains("404"), "err={err}");
         std::fs::remove_dir_all(&dir).ok();
     }
+
+    /// 真实链路端到端：Edge TTS 合成 → ffmpeg 转 16k 单声道 → whisper 识别 → 断言中文文本
+    /// 需要网络（HuggingFace 模型 + 微软 TTS）与 ffmpeg，且较慢 → 默认 #[ignore]，CI 专门 job 里跑
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[tokio::test]
+    #[ignore = "需要网络下载模型 + ffmpeg，由 live-tests workflow 跑"]
+    async fn stt_live_roundtrip() {
+        let dir = std::env::temp_dir().join(format!("mindpal-stt-live-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        // 1) 模型（tiny q5_1，约 32MB）
+        let model = dir.join("ggml-tiny-q5_1.bin");
+        if !model.exists() {
+            let url = model_url("tiny").unwrap();
+            download_to(&url, &model, |_, _| {}).await.unwrap();
+        }
+        assert!(model.metadata().unwrap().len() > 1_000_000, "模型文件过小");
+
+        // 2) 用 Edge TTS 合成一句中文
+        let mp3 = dir.join("say.mp3");
+        crate::tts::synthesize("你好，这是一次语音识别测试。", "zh-CN-XiaoxiaoNeural", &mp3)
+            .await
+            .unwrap();
+
+        // 3) ffmpeg 转 16kHz 单声道 s16le
+        let raw = dir.join("say.raw");
+        let ok = std::process::Command::new("ffmpeg")
+            .arg("-y")
+            .arg("-i")
+            .arg(&mp3)
+            .args(["-ar", "16000", "-ac", "1", "-f", "s16le"])
+            .arg(&raw)
+            .status()
+            .expect("需要 ffmpeg")
+            .success();
+        assert!(ok, "ffmpeg 转码失败");
+        let bytes = std::fs::read(&raw).unwrap();
+        let samples = pcm_i16_to_f32(&bytes_to_i16(&bytes));
+        assert!(samples.len() > TARGET_SAMPLE_RATE as usize / 2, "音频过短");
+
+        // 4) whisper 识别
+        let ctx = engine::load_context(&model).unwrap();
+        let text = engine::transcribe(&ctx, &samples, Some("zh")).unwrap();
+        println!("识别结果: {text:?}");
+        assert!(
+            text.chars().any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c)),
+            "识别结果无中文: {text:?}"
+        );
+        assert!(text.chars().count() >= 2, "识别结果过短: {text:?}");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }

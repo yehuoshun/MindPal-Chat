@@ -403,4 +403,44 @@ mod tests {
             .unwrap_err();
         assert!(err.contains("401"), "err={err}");
     }
+
+    /// 真实 LLM 调用（需 DEEPSEEK_API_KEY；默认 ignore，由 live-tests workflow 跑）
+    /// 验证：真实 API 可达 + 流式分片拼接与最终文本一致
+    #[tokio::test]
+    #[ignore = "需要真实 API key，由 live-tests workflow 跑"]
+    async fn llm_live_chat() {
+        let key = match std::env::var("DEEPSEEK_API_KEY") {
+            Ok(k) if !k.trim().is_empty() => k,
+            _ => {
+                println!("未配置 DEEPSEEK_API_KEY，跳过真实 LLM 测试");
+                return;
+            }
+        };
+        let cfg = AppConfig {
+            provider: "deepseek".to_string(),
+            api_key: key,
+            model: "deepseek-chat".to_string(),
+            base_url: "https://api.deepseek.com/v1".to_string(),
+            temperature: 0.3,
+            ..AppConfig::default()
+        };
+        let messages = vec![ChatMessage {
+            role: "user".to_string(),
+            content: "只回复两个字：收到".to_string(),
+        }];
+        let mut tokens: Vec<String> = Vec::new();
+        let full = stream_chat_with(
+            &Client::new(),
+            &cfg,
+            "你是一个简洁的助手",
+            &messages,
+            |t| tokens.push(t.to_string()),
+        )
+        .await
+        .unwrap();
+        println!("真实回复: {full:?}；分片数 {}", tokens.len());
+        assert!(!full.trim().is_empty(), "回复为空");
+        assert!(!tokens.is_empty(), "没有收到流式分片");
+        assert_eq!(tokens.concat(), full, "流式分片拼接与最终文本不一致");
+    }
 }

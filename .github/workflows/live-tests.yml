@@ -1,0 +1,120 @@
+name: Live tests
+
+# 重测试（要网络/GUI/模型下载）：手动 + 每日定时，不进每次 push
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 19 * * *" # 每日 UTC 19:00（北京 03:00）
+
+jobs:
+  stt-live:
+    name: STT 真实链路（TTS→ffmpeg→whisper）
+    runs-on: ubuntu-latest
+    env:
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system deps (webkit + ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf ffmpeg
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Run live STT roundtrip
+        run: cargo test --manifest-path src-tauri/Cargo.toml -- --ignored --nocapture stt_live_roundtrip
+        timeout-minutes: 30
+
+  llm-live:
+    name: LLM 真实对话（需 key，缺失则跳过）
+    runs-on: ubuntu-latest
+    env:
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system deps (webkit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Check key presence
+        id: check
+        run: |
+          if [ -z "${{ secrets.DEEPSEEK_API_KEY }}" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "未配置 DEEPSEEK_API_KEY，跳过真实 LLM 测试"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run live LLM chat test
+        if: steps.check.outputs.present == 'true'
+        env:
+          MINDPAL_LIVE_LLM: "1"
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: cargo test --manifest-path src-tauri/Cargo.toml -- --ignored --nocapture llm_live_chat
+        timeout-minutes: 20
+
+  linux-smoke:
+    name: Linux 启动冒烟（xvfb 起真程序）
+    runs-on: ubuntu-latest
+    env:
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf xvfb dbus-x11
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build binary
+        run: npm run tauri build -- --no-bundle
+        timeout-minutes: 60
+      - name: Smoke run under xvfb
+        run: |
+          set +e
+          if command -v dbus-run-session >/dev/null 2>&1; then
+            dbus-run-session -- xvfb-run -a timeout 15 ./src-tauri/target/release/mindpal-chat > smoke.log 2>&1
+          else
+            xvfb-run -a timeout 15 ./src-tauri/target/release/mindpal-chat > smoke.log 2>&1
+          fi
+          CODE=$?
+          echo "退出码 $CODE"
+          if [ "$CODE" -eq 124 ]; then
+            echo "✅ 应用启动后持续存活 15s（冒烟通过）"
+          else
+            echo "❌ 应用提前退出，日志尾部："
+            tail -40 smoke.log
+            exit 1
+          fi
+
+  ios-sim:
+    name: iOS 模拟器构建
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build for iOS simulator
+        run: npm run tauri ios build -- --target aarch64-sim
+        timeout-minutes: 60
+      - name: Report artifacts
+        run: find src-tauri/gen/apple -name "*.app" -maxdepth 6 -exec du -sh {} + 2>/dev/null || true
