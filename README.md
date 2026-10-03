@@ -42,6 +42,12 @@
 > 构建方式：`npm run tauri build -- --bundles <deb|nsis|dmg>`；CI 见 `.github/workflows/platforms.yml`（手动 + 每日定时）。
 > 语音能力默认关闭、模型由用户自行下载，**不占包体**。
 
+## 发版（GitHub Releases）
+
+- **推荐**：push 一个 `v*` tag（如 `git tag v0.2.0 && git push origin v0.2.0`）→ Release workflow 自动构建 Linux(.deb) / Windows(.exe) / macOS(.dmg) 安装包并发布到 Releases，产物版本号取 tag，changelog 自动生成
+- **手动**：Actions → Release → Run workflow，version 留空则用当前版本号（自动创建 `v<版本>` tag 发版）
+- iOS 需签名 + 开发者账号，不在此流程内；Android APK 走 `android-release.yml`（手动，需签名才可装真机）
+
 详细架构见 [`docs/architecture-overview.md`](docs/architecture-overview.md)，测试规划见 [`docs/testing-plan.md`](docs/testing-plan.md)。
 
 ## 开发
