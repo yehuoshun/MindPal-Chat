@@ -254,17 +254,29 @@ jobs:
             echo "$body"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+      - name: Flatten artifacts (apk 按 ABI 重命名，防目录上传)
+        shell: bash
+        run: |
+          find dist-artifacts -name '*.apk' | while read -r f; do
+            abi="$(basename "$(dirname "$f")")"
+            mv "$f" "dist-artifacts/mindpal-chat-${abi}.apk"
+          done
+          find dist-artifacts -type d -empty -delete
+          ls -lh dist-artifacts/
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTES: ${{ steps.changelog.outputs.body }}
         shell: bash
         run: |
-          ls -lh dist-artifacts/
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG="${{ github.ref_name }}"
           else
             TAG="v${{ needs.linux.outputs.version }}"
+          fi
+          # 幂等：同名 release 已存在则先删（如上次发布到一半失败）
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --yes
           fi
           printf '%s' "$NOTES" > release-notes.md
           gh release create "$TAG" dist-artifacts/* \
