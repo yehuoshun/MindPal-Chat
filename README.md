@@ -28,25 +28,32 @@
 - ⬜ STT 移动端（whisper.cpp 交叉编译）
 - ⬜ 应用图标换 MindPal 品牌（当前是 Tauri 默认图标）
 
-## 多端产物（release）
+## 多端产物
+
+### 已发布（GitHub Releases）
 
 | 端 | 产物 | 体积 | 备注 |
 |----|------|------|------|
 | Windows | NSIS 安装包 | ~3.6 MB | exe 本体 ~12 MB；分发需签名 |
 | Linux | .deb | ~5.6 MB | 二进制 ~13 MB |
 | macOS | .dmg (arm64) | ~4.5 MB | 最低系统版本 10.15 |
-| Android | .apk | ~11 MB (arm64) | 4 ABI 各 8-12 MB；已生成工程 + CI 出包 |
-| iOS | 工程已生成（`src-tauri/gen/apple`） | — | 真机包需签名 + 开发者账号 |
-| Web | 未实现 | — | 二期，需另写轻量 API Server |
+| Android | .apk ×4（按 ABI 拆分） | 各 8-12 MB | debug 签名：手机开「允许未知来源」即可安装；正式分发（Play 商店等）需 release 签名 |
+
+### 工程就绪（未出可安装包）
+
+| 端 | 状态 |
+|----|------|
+| iOS | 工程已生成（`src-tauri/gen/apple`），真机包需 Apple 开发者账号 + 签名 |
+| Web | 二期，需另写轻量 API Server（当前后端走 Tauri IPC，浏览器不可用） |
 
 > 构建方式：`npm run tauri build -- --bundles <deb|nsis|dmg>`；CI 见 `.github/workflows/platforms.yml`（手动 + 每日定时）。
 > 语音能力默认关闭、模型由用户自行下载，**不占包体**。
 
 ## 发版（GitHub Releases）
 
-- **推荐**：push 一个 `v*` tag（如 `git tag v0.2.0 && git push origin v0.2.0`）→ Release workflow 自动构建 Linux(.deb) / Windows(.exe) / macOS(.dmg) 安装包并发布到 Releases，产物版本号取 tag，changelog 自动生成
+- **推荐**：push 一个 `v*` tag（如 `git tag v0.2.0 && git push origin v0.2.0`）→ Release workflow 自动构建 Linux(.deb) / Windows(.exe) / macOS(.dmg) / Android(.apk，debug 签名) 并发布到 Releases，产物版本号取 tag，changelog 自动生成
 - **手动**：Actions → Release → Run workflow，version 留空则用当前版本号（自动创建 `v<版本>` tag 发版）
-- iOS 需签名 + 开发者账号，不在此流程内；Android APK 走 `android-release.yml`（手动，需签名才可装真机）
+- iOS 需签名 + 开发者账号，不在此流程内
 
 详细架构见 [`docs/architecture-overview.md`](docs/architecture-overview.md)，测试规划见 [`docs/testing-plan.md`](docs/testing-plan.md)。
 

@@ -172,9 +172,62 @@ jobs:
           path: src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
 
+  android:
+    name: Android build (apk, debug 签名)
+    runs-on: ubuntu-latest
+    env:
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Resolve & sync version
+        id: version
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              VERSION="${GITHUB_REF_NAME#v}"
+            else
+              VERSION="$(jq -r .version src-tauri/tauri.conf.json)"
+            fi
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "构建版本: $VERSION"
+          # GNU/BSD sed 兼容：-i 在 macOS(BSD) 需扩展名参数，改用临时文件 + mv
+          sed "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json > .tauri.conf.json.tmp && mv .tauri.conf.json.tmp src-tauri/tauri.conf.json
+          sed "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml > .Cargo.toml.tmp && mv .Cargo.toml.tmp src-tauri/Cargo.toml
+          grep -n '"version"' src-tauri/tauri.conf.json
+      - name: Build release APKs (split per ABI, debug 签名)
+        run: npm run tauri android build -- --apk --split-per-abi
+        timeout-minutes: 60
+      - name: Report sizes
+        run: |
+          echo "=== APK 体积（拆 ABI）==="
+          find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -exec du -h {} + | sort -h
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mindpal-chat-android-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+
   publish:
     name: Publish GitHub Release
-    needs: [linux, windows, macos]
+    needs: [linux, windows, macos, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
