@@ -54,8 +54,9 @@ jobs:
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "构建版本: $VERSION"
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
+          # GNU/BSD sed 兼容：-i 在 macOS(BSD) 需扩展名参数，改用临时文件 + mv
+          sed "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json > .tauri.conf.json.tmp && mv .tauri.conf.json.tmp src-tauri/tauri.conf.json
+          sed "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml > .Cargo.toml.tmp && mv .Cargo.toml.tmp src-tauri/Cargo.toml
           grep -n '"version"' src-tauri/tauri.conf.json
       - name: Build
         run: npm run tauri build -- --bundles deb
@@ -103,8 +104,9 @@ jobs:
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "构建版本: $VERSION"
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
+          # GNU/BSD sed 兼容：-i 在 macOS(BSD) 需扩展名参数，改用临时文件 + mv
+          sed "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json > .tauri.conf.json.tmp && mv .tauri.conf.json.tmp src-tauri/tauri.conf.json
+          sed "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml > .Cargo.toml.tmp && mv .Cargo.toml.tmp src-tauri/Cargo.toml
           grep -n '"version"' src-tauri/tauri.conf.json
       - name: Build
         run: npm run tauri build -- --bundles nsis
@@ -153,8 +155,9 @@ jobs:
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "构建版本: $VERSION"
-          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
+          # GNU/BSD sed 兼容：-i 在 macOS(BSD) 需扩展名参数，改用临时文件 + mv
+          sed "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json > .tauri.conf.json.tmp && mv .tauri.conf.json.tmp src-tauri/tauri.conf.json
+          sed "s/^version = \".*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml > .Cargo.toml.tmp && mv .Cargo.toml.tmp src-tauri/Cargo.toml
           grep -n '"version"' src-tauri/tauri.conf.json
       - name: Build
         run: npm run tauri build -- --bundles dmg
@@ -186,7 +189,7 @@ jobs:
       - name: Build changelog (since last tag)
         id: changelog
         run: |
-          prev="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          prev="$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || true)"  # 排除当前 tag 自身，首个 tag 时回退全量
           if [ -n "$prev" ]; then
             log="$(git log --oneline "$prev"..HEAD)"
           else
