@@ -257,8 +257,9 @@ jobs:
       - name: Flatten artifacts (apk 按 ABI 重命名，防目录上传)
         shell: bash
         run: |
+          # apk 结构 outputs/apk/<abi>/release/*.apk，取顶层 ABI 目录名，防同名覆盖
           find dist-artifacts -name '*.apk' | while read -r f; do
-            abi="$(basename "$(dirname "$f")")"
+            abi="$(echo "${f#dist-artifacts/}" | cut -d/ -f1)"
             mv "$f" "dist-artifacts/mindpal-chat-${abi}.apk"
           done
           find dist-artifacts -type d -empty -delete
